@@ -1,27 +1,21 @@
-import { type Env, Hono } from "hono";
-import auth from "./routes/auth.route";
-import users from "./routes/users.route";
-import groups from "./routes/groups.route";
-import items from "./routes/items.route";
-import reservations from "./routes/reservations.route";
+import { swaggerUI } from "@hono/swagger-ui";
+import { OpenAPIHono } from "@hono/zod-openapi";
 import { v2 as cloudinary } from "cloudinary";
-import { logger } from "hono/logger";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
-import { deleteCookie, getCookie, setCookie } from "hono/cookie";
-import { Session, SessionManager, User } from "./lib/session";
+import { logger } from "hono/logger";
 import sessionMiddleware from "./middlewares/session.middleware";
+import auth from "./routes/auth";
+import groups from "./routes/groups";
+import images from "./routes/images";
+import items from "./routes/items.route";
+import reservations from "./routes/reservations.route";
+import users from "./routes/users";
+import { Context } from "./types/hono";
 
-export interface Context extends Env {
-  Variables: {
-    user: User | null;
-    session: Session | null;
-  };
-}
+const ORIGIN: string = "http://localhost:4000";
 
-const ORIGIN: string = "http://localhost:3000";
-
-const app = new Hono<Context>();
+const app = new OpenAPIHono<Context>();
 
 app.use(logger());
 app.use(
@@ -29,14 +23,13 @@ app.use(
   cors({
     origin: ORIGIN,
     allowMethods: ["GET", "HEAD", "POST", "PUT", "DELETE"],
-  })
+  }),
 );
 app.use(
   csrf({
     origin: ORIGIN,
-  })
+  }),
 );
-// session middleware
 app.use("*", sessionMiddleware);
 
 app.use(async (_c, next) => {
@@ -48,14 +41,38 @@ app.use(async (_c, next) => {
   await next();
 });
 
-app.route("/api/auth", auth);
-app.route("/api/users", users);
-app.route("/api/groups", groups);
-app.route("/api/items", items);
-app.route("/api/reservations", reservations);
+app.basePath("/api");
+app.route("/", images);
+app.route("/", auth);
+app.route("/", users);
+app.route("/", groups);
+app.route("/", items);
+app.route("/", reservations);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
+});
+
+app.get("/ui", swaggerUI({ url: "/doc" }));
+
+app.openAPIRegistry.registerComponent("securitySchemes", "cookieAuth", {
+  type: "apiKey",
+  in: "cookie",
+  name: "s_id",
+  description: "Session ID",
+});
+
+app.doc("/doc", {
+  openapi: "3.0.0",
+  info: {
+    version: "1.0.0",
+    title: "Hono API",
+  },
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
 });
 
 export default {
