@@ -1,0 +1,104 @@
+import db from "@/database";
+import { users } from "@/database/schema";
+import { KakaoOAuth } from "@/lib/kakao-ouath";
+import { SessionManager } from "@/lib/session";
+import { Context } from "@/types/hono";
+import { OpenAPIHono } from "@hono/zod-openapi";
+import { v2 as cloudinary } from "cloudinary";
+import { and, eq } from "drizzle-orm";
+import { setCookie } from "hono/cookie";
+import * as routes from "./auth.routes";
+const app = new OpenAPIHono<Context>();
+
+app.openapi(routes.kakaoLogin, (c) => {
+  const redirectUri = KakaoOAuth.getSignInUrl();
+  return c.json({ url: redirectUri });
+});
+
+app.openapi(routes.kakaoLoginRedirect, async (c) => {
+  const { code } = c.req.valid("query");
+
+  const { access_token } = await KakaoOAuth.fetchAccessToken(code);
+  if (!access_token) {
+    return c.json({ error: "Failed to get access token" }, 500);
+  }
+  const userProfile = await KakaoOAuth.fetchUserProfile(access_token);
+  if (!userProfile) {
+    return c.json({ error: "Failed to get user profile" }, 500);
+  }
+  const { id, nickname, profile_image } = userProfile;
+  let user = await db.query.users.findFirst({
+    where: and(
+      eq(users.provider, "kakao"),
+      eq(users.providerId, id.toString()),
+    ),
+  });
+  if (!user) {
+    const results = await cloudinary.uploader.upload(profile_image);
+    [user] = await db
+      .insert(users)
+      .values({
+        username: nickname,
+        provider: "kakao",
+        providerId: id.toString(),
+        profileImage: results.secure_url,
+      })
+      .returning();
+  }
+
+  const session = await SessionManager.createSession(user.id);
+  if (!session) {
+    return c.json({ error: "Failed to create session" }, 500);
+  }
+  setCookie(c, "s_id", session.id, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Lax",
+    expires: session.expiresAt,
+  });
+  return c.json({ message: "Login successful" });
+});
+
+app.openapi(routes.kakaoLoginCallback, async (c) => {
+  const { code } = await c.req.valid("json");
+  const { access_token } = await KakaoOAuth.fetchAccessToken(code);
+  if (!access_token) {
+    return c.json({ error: "Failed to get access token" }, 500);
+  }
+  const userProfile = await KakaoOAuth.fetchUserProfile(access_token);
+  if (!userProfile) {
+    return c.json({ error: "Failed to get user profile" }, 500);
+  }
+  const { id, nickname, profile_image } = userProfile;
+  let user = await db.query.users.findFirst({
+    where: and(
+      eq(users.provider, "kakao"),
+      eq(users.providerId, id.toString()),
+    ),
+  });
+  if (!user) {
+    [user] = await db
+      .insert(users)
+      .values({
+        username: nickname,
+        provider: "kakao",
+        providerId: id.toString(),
+        profileImage: profile_image,
+      })
+      .returning();
+  }
+
+  const session = await SessionManager.createSession(user.id);
+  if (!session) {
+    return c.json({ error: "Failed to create session" }, 500);
+  }
+  setCookie(c, "s_id", session.id, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Lax",
+    expires: session.expiresAt,
+  });
+  return c.json({ message: "Login successful" });
+});
+
+export default app;
