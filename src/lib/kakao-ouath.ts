@@ -1,27 +1,4 @@
-abstract class KakaoOAuthAbstract {
-  static getSignInUrl(): string {
-    throw new Error("Method not implemented.");
-  }
-
-  static fetchAccessToken(code: string): Promise<{
-    access_token: string;
-    access_token_expires_in: number;
-    refresh_token: string;
-    refresh_token_expires_in: number;
-  }> {
-    throw new Error("Method not implemented.");
-  }
-
-  static fetchUserProfile(accessToken: string): Promise<{
-    id: string;
-    nickname: string;
-    profile_image: string;
-  }> {
-    throw new Error("Method not implemented.");
-  }
-}
-
-export class KakaoOAuth implements KakaoOAuthAbstract {
+export class KakaoOAuth {
   static getSignInUrl(): string {
     const url = "https://kauth.kakao.com/oauth/authorize";
     const params = new URLSearchParams({
