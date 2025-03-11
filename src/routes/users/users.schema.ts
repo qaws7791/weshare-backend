@@ -8,3 +8,8 @@ export const UserSchema = z.object({
   providerId: z.string(),
   profileImage: z.string(),
 });
+
+export const UpdateProfileJsonSchema = z.object({
+  username: z.string().optional(),
+  profileImage: z.string().optional(),
+});
