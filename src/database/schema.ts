@@ -1,8 +1,14 @@
-import { primaryKey } from "drizzle-orm/pg-core";
-import { varchar } from "drizzle-orm/pg-core";
-import { pgTable, integer, text, timestamp } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
+import {
+  boolean,
+  integer,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 import { slugId } from "../lib/nanoid";
-import { boolean } from "drizzle-orm/pg-core";
 
 const baseColumns = {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -41,6 +47,13 @@ export const users = pgTable("users", {
   updatedAt: baseColumns.updatedAt,
 });
 
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+  groupMembers: many(groupMembers),
+  reservations: many(reservations),
+  groups: many(groups),
+}));
+
 /**
  * 사용자 세션 테이블
  * @description 사용자 세션 정보를 저장하는 테이블입니다.
@@ -57,6 +70,13 @@ export const sessions = pgTable("sessions", {
     withTimezone: true,
   }).notNull(),
 });
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
+  }),
+}));
 
 /**
  * 그룹 테이블
@@ -79,6 +99,17 @@ export const groups = pgTable("groups", {
   updatedAt: baseColumns.updatedAt,
 });
 
+export const groupsRelations = relations(groups, ({ many, one }) => ({
+  groupMembers: many(groupMembers),
+  groupImages: many(groupImages),
+  groupInvites: many(groupInvites),
+  items: many(items),
+  createdBy: one(users, {
+    fields: [groups.createdBy],
+    references: [users.id],
+  }),
+}));
+
 /**
  * 그룹 이미지 테이블
  * @description 그룹 이미지 정보를 저장하는 테이블입니다.
@@ -95,6 +126,13 @@ export const groupImages = pgTable("group_images", {
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
 });
+
+export const groupImagesRelations = relations(groupImages, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupImages.groupId],
+    references: [groups.id],
+  }),
+}));
 
 /**
  * 그룹 멤버 테이블
@@ -120,8 +158,19 @@ export const groupMembers = pgTable(
     createdAt: baseColumns.createdAt,
     updatedAt: baseColumns.updatedAt,
   },
-  (table) => [primaryKey({ columns: [table.groupId, table.userId] })]
+  (table) => [primaryKey({ columns: [table.groupId, table.userId] })],
 );
+
+export const groupMembersRelations = relations(groupMembers, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupMembers.groupId],
+    references: [groups.id],
+  }),
+  user: one(users, {
+    fields: [groupMembers.userId],
+    references: [users.id],
+  }),
+}));
 
 /**
  * 그룹 초대 테이블
@@ -145,6 +194,13 @@ export const groupInvites = pgTable("group_invites", {
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
 });
+
+export const groupInvitesRelations = relations(groupInvites, ({ one }) => ({
+  group: one(groups, {
+    fields: [groupInvites.groupId],
+    references: [groups.id],
+  }),
+}));
 
 /**
  * 물품 테이블
@@ -174,6 +230,15 @@ export const items = pgTable("items", {
   updatedAt: baseColumns.updatedAt,
 });
 
+export const itemsRelations = relations(items, ({ many, one }) => ({
+  group: one(groups, {
+    fields: [items.groupId],
+    references: [groups.id],
+  }),
+  itemImages: many(itemImages),
+  reservations: many(reservations),
+}));
+
 /**
  * 물품 이미지 테이블
  * @description 물품 이미지 정보를 저장하는 테이블입니다.
@@ -190,6 +255,13 @@ export const itemImages = pgTable("item_images", {
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
 });
+
+export const itemImagesRelations = relations(itemImages, ({ one }) => ({
+  item: one(items, {
+    fields: [itemImages.itemId],
+    references: [items.id],
+  }),
+}));
 
 /**
  * 예약 테이블
@@ -236,6 +308,21 @@ export const reservations = pgTable("reservations", {
   updatedAt: baseColumns.updatedAt,
 });
 
+export const reservationsRelations = relations(
+  reservations,
+  ({ one, many }) => ({
+    users: one(users, {
+      fields: [reservations.userId],
+      references: [users.id],
+    }),
+    items: one(items, {
+      fields: [reservations.itemId],
+      references: [items.id],
+    }),
+    reservationImages: many(reservationImages),
+  }),
+);
+
 /**
  * 예약 이미지 테이블
  * @description 예약 이미지 정보를 저장하는 테이블입니다.
@@ -254,3 +341,13 @@ export const reservationImages = pgTable("reservation_images", {
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
 });
+
+export const reservationImagesRelations = relations(
+  reservationImages,
+  ({ one }) => ({
+    reservation: one(reservations, {
+      fields: [reservationImages.reservationId],
+      references: [reservations.id],
+    }),
+  }),
+);
