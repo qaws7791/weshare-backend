@@ -52,28 +52,34 @@ app.openapi(routes.create, async (c) => {
 
   const { name, description, image } = json;
 
-  const [groupData] = await db
-    .insert(groups)
-    .values({
-      name,
-      description,
-      createdBy: user.id,
-    })
-    .returning();
+  const groupData = await db.transaction(async (tx) => {
+    const [group] = await tx
+      .insert(groups)
+      .values({
+        name,
+        description,
+        createdBy: user.id,
+      })
+      .returning();
 
-  await db.insert(groupMembers).values({
-    groupId: groupData.id,
-    userId: user.id,
-    role: GROUP_ROLE.ADMIN,
+    await tx.insert(groupMembers).values({
+      groupId: group.id,
+      userId: user.id,
+      role: GROUP_ROLE.ADMIN,
+    });
+
+    const [groupImage] = await tx
+      .insert(groupImages)
+      .values({
+        groupId: group.id,
+        imageUrl: image,
+      })
+      .returning();
+
+    return { ...group, groupImage };
   });
 
-  const [groupImage] = await db
-    .insert(groupImages)
-    .values({
-      groupId: groupData.id,
-      imageUrl: image,
-    })
-    .returning();
+  const groupImage = groupData.groupImage;
 
   return c.json({
     status: "success",
