@@ -1,4 +1,4 @@
-import { resourceContent } from "@/lib/create-schema";
+import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   UpdateProfileJsonSchema,
@@ -25,14 +25,10 @@ export const profile = createRoute({
   responses: {
     [status.OK]: {
       description: "사용자 정보",
-      content: {
-        "application/json": {
-          schema: resourceContent(UserSchema),
-        },
-      },
+      content: resourceContent(UserSchema),
     },
-    [status.INTERNAL_SERVER_ERROR]: {
-      description: "서버 오류",
+    [status.NOT_FOUND]: {
+      description: "사용자를 찾을 수 없습니다.",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,
@@ -66,28 +62,12 @@ export const updateProfile = createRoute({
   },
   responses: {
     [status.OK]: {
-      description: "사용자 정보",
-      content: {
-        "application/json": {
-          schema: resourceContent(UserSchema),
-        },
-      },
+      description: "사용자 정보 수정 성공",
+      content: resourceContent(UserSchema),
     },
-    [status.BAD_REQUEST]: {
-      description: "잘못된 요청",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
-    },
-    [status.INTERNAL_SERVER_ERROR]: {
-      description: "서버 오류",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+    [status.NOT_FOUND]: {
+      description: "사용자를 찾을 수 없습니다.",
+      content: errorContent(),
     },
   },
 });

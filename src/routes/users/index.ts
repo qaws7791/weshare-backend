@@ -16,10 +16,10 @@ app.openapi(routes.profile, async (c) => {
     return c.json(
       {
         status: "error",
-        code: 500,
+        code: 404,
         message: "User not found",
       },
-      500,
+      404,
     );
   }
 
@@ -42,54 +42,43 @@ app.openapi(routes.updateProfile, async (c) => {
   const user = c.get("user")!;
   const { username, profileImage } = c.req.valid("json");
 
-  try {
-    const userData = await db.query.users.findFirst({
-      where: eq(users.id, user.id),
-    });
+  const userData = await db.query.users.findFirst({
+    where: eq(users.id, user.id),
+  });
 
-    if (!userData) {
-      return c.json(
-        {
-          status: "error",
-          code: 500,
-          message: "User not found",
-        },
-        500,
-      );
-    }
-
-    const [updatedUser] = await db
-      .update(users)
-      .set({
-        username: username ?? userData.username,
-        profileImage: profileImage ?? userData.profileImage,
-      })
-      .where(eq(users.id, user.id))
-      .returning();
-
-    return c.json({
-      status: "success",
-      code: 200,
-      message: "User updated",
-      data: {
-        id: updatedUser.id.toString(),
-        username: updatedUser.username,
-        email: updatedUser.email,
-        provider: updatedUser.provider,
-        providerId: updatedUser.providerId,
-        profileImage: updatedUser.profileImage,
-      },
-    });
-  } catch {
+  if (!userData) {
     return c.json(
       {
         status: "error",
-        code: 500,
-        message: "Internal server error",
+        code: 404,
+        message: "User not found",
       },
-      500,
+      404,
     );
   }
+
+  await db
+    .update(users)
+    .set({
+      username,
+      profileImage,
+    })
+    .where(eq(users.id, user.id))
+    .returning();
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "User updated",
+    data: {
+      id: userData.id.toString(),
+      username: userData.username,
+      email: userData.email,
+      provider: userData.provider,
+      providerId: userData.providerId,
+      profileImage: userData.profileImage,
+    },
+  });
 });
 
 export default app;
