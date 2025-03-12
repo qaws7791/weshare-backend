@@ -8,7 +8,7 @@ export const GroupListSchema = z.array(
     createdBy: z.string(),
     createdAt: z.string(),
     updatedAt: z.string(),
-  })
+  }),
 );
 
 export const GroupCreateJsonSchema = z.object({
@@ -25,4 +25,14 @@ export const GroupDetailSchema = z.object({
   createdBy: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+});
+
+export const GroupUpdateJsonSchema = z.object({
+  name: z.string().min(1).max(50).optional(),
+  description: z.string().max(200).optional(),
+  image: z.string().optional(),
+});
+
+export const GroupParamsSchema = z.object({
+  id: z.string(),
 });

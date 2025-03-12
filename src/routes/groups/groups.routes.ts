@@ -4,7 +4,9 @@ import {
   GroupCreateJsonSchema,
   GroupDetailSchema,
   GroupListSchema,
+  GroupParamsSchema,
 } from "@/routes/groups/groups.schema";
+import { ErrorResponseSchema } from "@/shared/schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
@@ -46,6 +48,86 @@ export const list = createRoute({
       content: {
         "application/json": {
           schema: resourceContent(GroupListSchema),
+        },
+      },
+    },
+  },
+});
+
+export const update = createRoute({
+  summary: "그룹 정보 수정",
+  method: "patch",
+  path: "/groups/{id}",
+  middleware: [isAuthenticated] as const,
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: GroupCreateJsonSchema,
+        },
+      },
+      description: "Group to update",
+    },
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.OK]: {
+      description: "Update group",
+      content: {
+        "application/json": {
+          schema: resourceContent(GroupDetailSchema),
+        },
+      },
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member of this group",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+  },
+});
+
+export const detail = createRoute({
+  summary: "그룹 상세 조회",
+  method: "get",
+  path: "/groups/{id}",
+  middleware: [isAuthenticated] as const,
+  request: {
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.OK]: {
+      description: "Group detail",
+      content: {
+        "application/json": {
+          schema: resourceContent(GroupDetailSchema),
+        },
+      },
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member of this group",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
+        },
+      },
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
+      content: {
+        "application/json": {
+          schema: ErrorResponseSchema,
         },
       },
     },
