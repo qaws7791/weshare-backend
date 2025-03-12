@@ -1,3 +1,5 @@
+import { resourceContent } from "@/lib/create-schema";
+import { KakaoLoginUrlSchema } from "@/routes/auth/auth.schema";
 import { createRoute, z } from "@hono/zod-openapi";
 import status from "http-status";
 
@@ -8,13 +10,7 @@ export const kakaoLogin = createRoute({
   responses: {
     [status.OK]: {
       description: "Response Login URL",
-      content: {
-        "application/json": {
-          schema: z.object({
-            url: z.string(),
-          }),
-        },
-      },
+      content: resourceContent(KakaoLoginUrlSchema),
     },
   },
 });

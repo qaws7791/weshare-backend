@@ -1,10 +1,9 @@
-import { resourceContent } from "@/lib/create-schema";
+import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   UploadImageBodySchema,
   UploadImageSchema,
 } from "@/routes/images/images.schema";
-import { ErrorResponseSchema } from "@/shared/schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
@@ -26,27 +25,15 @@ export const uploadOne = createRoute({
   responses: {
     [status.OK]: {
       description: "Upload image",
-      content: {
-        "application/json": {
-          schema: resourceContent(UploadImageSchema),
-        },
-      },
+      content: resourceContent(UploadImageSchema),
     },
     [status.BAD_REQUEST]: {
       description: "Invalid file type",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+      content: errorContent(),
     },
     [status.INTERNAL_SERVER_ERROR]: {
       description: "Error uploading file",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+      content: errorContent(),
     },
   },
 });

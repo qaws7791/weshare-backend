@@ -12,7 +12,12 @@ const app = new OpenAPIHono<Context>();
 
 app.openapi(routes.kakaoLogin, (c) => {
   const redirectUri = KakaoOAuth.getSignInUrl();
-  return c.json({ url: redirectUri });
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Login URL fetched successfully",
+    data: { url: redirectUri },
+  });
 });
 
 app.openapi(routes.kakaoLoginRedirect, async (c) => {
