@@ -50,3 +50,12 @@ export const GroupMemberListSchema = z.array(
 export const GroupMembersDeleteSchema = z.object({
   ids: z.array(z.string()),
 });
+
+export const GroupInviteSchema = z.object({
+  id: z.string(),
+  code: z.string(),
+  isExpired: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  groupId: z.string(),
+});

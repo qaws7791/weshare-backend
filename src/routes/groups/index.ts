@@ -1,8 +1,14 @@
 import { GROUP_ROLE } from "@/lib/group-role";
+import { slugId } from "@/lib/nanoid";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq, inArray } from "drizzle-orm";
 import db from "../../database";
-import { groupImages, groupMembers, groups } from "../../database/schema";
+import {
+  groupImages,
+  groupInvites,
+  groupMembers,
+  groups,
+} from "../../database/schema";
 import * as routes from "./groups.routes";
 const app = new OpenAPIHono();
 
@@ -381,6 +387,75 @@ app.openapi(routes.deleteMembers, async (c) => {
       500,
     );
   }
+});
+
+app.openapi(routes.createInviteLink, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to create invite link",
+      },
+      403,
+    );
+  }
+
+  const existingInvite = await db.query.groupInvites.findFirst({
+    where: eq(groupInvites.groupId, id),
+  });
+
+  if (existingInvite) {
+    return c.json(
+      {
+        status: "fail",
+        code: 409,
+        message: "Invite link already exists",
+      },
+      409,
+    );
+  }
+
+  const [inviteCode] = await db
+    .insert(groupInvites)
+    .values({
+      groupId: id,
+      code: slugId(),
+    })
+    .returning();
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Invite link created successfully",
+    data: {
+      id: inviteCode.id.toString(),
+      code: inviteCode.code,
+      groupId: inviteCode.groupId.toString(),
+      isExpired: inviteCode.isExpired,
+      createdAt: inviteCode.createdAt.toISOString(),
+      updatedAt: inviteCode.updatedAt.toISOString(),
+    },
+  });
 });
 
 export default app;
