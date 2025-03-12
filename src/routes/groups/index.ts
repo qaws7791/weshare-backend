@@ -508,4 +508,60 @@ app.openapi(routes.listInvites, async (c) => {
   });
 });
 
+app.openapi(routes.joinInviteLink, async (c) => {
+  // 1. 유효성 확인 -> 초대 링크, 그룹 존재 여부 확인
+  // 2. 이미 가입된 그룹인지 확인
+  // 3. 그룹 멤버 추가
+  // 4. 그룹 정보 반환
+
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+  const { code } = c.req.valid("json");
+
+  const existingInvite = await db.query.groupInvites.findFirst({
+    where: and(eq(groupInvites.groupId, id), eq(groupInvites.code, code)),
+  });
+
+  if (!existingInvite || existingInvite.isExpired) {
+    return c.json(
+      {
+        status: "fail",
+        code: 400,
+        message: "Invalid invite code",
+      },
+      400,
+    );
+  }
+
+  const existingGroupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (existingGroupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 409,
+        message: "Already a member of this group",
+      },
+      409,
+    );
+  }
+
+  await db.insert(groupMembers).values({
+    groupId: id,
+    userId: user.id,
+    role: GROUP_ROLE.MEMBER,
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Joined group successfully",
+    data: {
+      groupId: id,
+    },
+  });
+});
+
 export default app;

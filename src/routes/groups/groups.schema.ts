@@ -70,3 +70,11 @@ export const GroupInviteListSchema = z.array(
     groupId: z.string(),
   }),
 );
+
+export const GroupJoinJsonSchema = z.object({
+  code: z.string(),
+});
+
+export const GroupInviteLinkSchema = z.object({
+  groupId: z.string(),
+});
