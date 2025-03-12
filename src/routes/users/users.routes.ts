@@ -17,6 +17,11 @@ export const profile = createRoute({
   description: "로그인한 사용자 정보 조회",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   responses: {
     [status.OK]: {
       description: "사용자 정보",
@@ -44,6 +49,11 @@ export const updateProfile = createRoute({
   description: "로그인한 사용자 정보 수정",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     body: {
       description: "수정할 사용자 정보",

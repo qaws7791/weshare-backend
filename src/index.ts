@@ -68,11 +68,6 @@ app.doc("/doc", {
     version: "1.0.0",
     title: "Hono API",
   },
-  security: [
-    {
-      cookieAuth: [],
-    },
-  ],
 });
 
 export default {

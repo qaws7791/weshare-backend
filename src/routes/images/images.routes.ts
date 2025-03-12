@@ -15,6 +15,11 @@ export const uploadOne = createRoute({
   path: "/images",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     body: {
       content: {

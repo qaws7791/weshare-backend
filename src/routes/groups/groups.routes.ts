@@ -23,6 +23,11 @@ export const create = createRoute({
   path: "/groups",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     body: {
       content: {
@@ -47,6 +52,11 @@ export const list = createRoute({
   path: "/groups",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   responses: {
     [status.OK]: {
       description: "List groups",
@@ -61,6 +71,11 @@ export const update = createRoute({
   path: "/groups/{id}",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     body: {
       content: {
@@ -94,6 +109,11 @@ export const detail = createRoute({
   path: "/groups/{id}",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
   },
@@ -119,6 +139,11 @@ export const remove = createRoute({
   path: "/groups/{id}",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
   },
@@ -147,6 +172,11 @@ export const listMembers = createRoute({
   path: "/groups/{id}/members",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
   },
@@ -168,6 +198,11 @@ export const deleteMembers = createRoute({
   path: "/groups/{id}/members",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
     body: {
@@ -204,6 +239,11 @@ export const createInviteLink = createRoute({
   path: "/groups/{id}/invites",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
   },
@@ -233,6 +273,11 @@ export const listInvites = createRoute({
   path: "/groups/{id}/invites",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
   },
@@ -258,6 +303,11 @@ export const joinInviteLink = createRoute({
   path: "/groups/{id}/join",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: GroupParamsSchema,
     body: {
