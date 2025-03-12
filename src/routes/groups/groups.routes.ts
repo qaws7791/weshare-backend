@@ -1,4 +1,4 @@
-import { resourceContent } from "@/lib/create-schema";
+import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   GroupCreateJsonSchema,
@@ -6,7 +6,6 @@ import {
   GroupListSchema,
   GroupParamsSchema,
 } from "@/routes/groups/groups.schema";
-import { ErrorResponseSchema } from "@/shared/schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
@@ -28,11 +27,7 @@ export const create = createRoute({
   responses: {
     [status.OK]: {
       description: "Create group",
-      content: {
-        "application/json": {
-          schema: resourceContent(GroupDetailSchema),
-        },
-      },
+      content: resourceContent(GroupDetailSchema),
     },
   },
 });
@@ -45,11 +40,7 @@ export const list = createRoute({
   responses: {
     [status.OK]: {
       description: "List groups",
-      content: {
-        "application/json": {
-          schema: resourceContent(GroupListSchema),
-        },
-      },
+      content: resourceContent(GroupListSchema),
     },
   },
 });
@@ -73,27 +64,15 @@ export const update = createRoute({
   responses: {
     [status.OK]: {
       description: "Update group",
-      content: {
-        "application/json": {
-          schema: resourceContent(GroupDetailSchema),
-        },
-      },
+      content: resourceContent(GroupDetailSchema),
     },
     [status.FORBIDDEN]: {
       description: "You are not a member of this group",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+      content: errorContent(),
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+      content: errorContent(),
     },
   },
 });
@@ -109,27 +88,42 @@ export const detail = createRoute({
   responses: {
     [status.OK]: {
       description: "Group detail",
-      content: {
-        "application/json": {
-          schema: resourceContent(GroupDetailSchema),
-        },
-      },
+      content: resourceContent(GroupDetailSchema),
     },
     [status.FORBIDDEN]: {
       description: "You are not a member of this group",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+      content: errorContent(),
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
-      content: {
-        "application/json": {
-          schema: ErrorResponseSchema,
-        },
-      },
+      content: errorContent(),
+    },
+  },
+});
+
+export const remove = createRoute({
+  summary: "그룹 삭제",
+  method: "delete",
+  path: "/groups/{id}",
+  middleware: [isAuthenticated] as const,
+  request: {
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.NO_CONTENT]: {
+      description: "Delete group",
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member of this group",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
+      content: errorContent(),
+    },
+    [status.INTERNAL_SERVER_ERROR]: {
+      description: "Internal server error",
+      content: errorContent(),
     },
   },
 });

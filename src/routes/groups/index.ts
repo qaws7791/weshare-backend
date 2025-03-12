@@ -1,3 +1,4 @@
+import { GROUP_ROLE } from "@/lib/group-role";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq } from "drizzle-orm";
 import db from "../../database";
@@ -63,7 +64,7 @@ app.openapi(routes.create, async (c) => {
   await db.insert(groupMembers).values({
     groupId: groupData.id,
     userId: user.id,
-    role: "admin",
+    role: GROUP_ROLE.ADMIN,
   });
 
   const [groupImage] = await db
@@ -168,7 +169,7 @@ app.openapi(routes.update, async (c) => {
     );
   }
 
-  const isGroupAdmin = groupMember?.role === "admin";
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
 
   if (!isGroupAdmin) {
     return c.json(
@@ -212,6 +213,60 @@ app.openapi(routes.update, async (c) => {
       image,
     },
   });
+});
+
+app.openapi(routes.remove, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  try {
+    const groupMember = await db.query.groupMembers.findFirst({
+      where: and(
+        eq(groupMembers.userId, user.id),
+        eq(groupMembers.groupId, id),
+      ),
+    });
+
+    if (!groupMember) {
+      return c.json(
+        {
+          status: "fail",
+          code: 404,
+          message: "Group not found",
+        },
+        404,
+      );
+    }
+
+    const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+    if (!isGroupAdmin) {
+      return c.json(
+        {
+          status: "fail",
+          code: 403,
+          message: "You are not authorized to delete this group",
+        },
+        403,
+      );
+    }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(groupMembers).where(eq(groupMembers.groupId, id));
+      await tx.delete(groupImages).where(eq(groupImages.groupId, id));
+      await tx.delete(groups).where(eq(groups.id, id));
+    });
+
+    return c.newResponse(null, 204);
+  } catch {
+    return c.json(
+      {
+        status: "fail",
+        code: 500,
+        message: "Internal server error",
+      },
+      500,
+    );
+  }
 });
 
 export default app;
