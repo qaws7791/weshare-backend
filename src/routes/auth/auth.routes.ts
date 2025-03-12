@@ -3,10 +3,13 @@ import { KakaoLoginUrlSchema } from "@/routes/auth/auth.schema";
 import { createRoute, z } from "@hono/zod-openapi";
 import status from "http-status";
 
+const TAG = "auth";
+
 export const kakaoLogin = createRoute({
   summary: "Kakao Login URL 가져오기",
   method: "get",
   path: "auth/login/kakao",
+  tags: [TAG],
   responses: {
     [status.OK]: {
       description: "Response Login URL",
@@ -19,6 +22,7 @@ export const kakaoLoginRedirect = createRoute({
   summary: "Kakao Login 리디렉션 버전",
   method: "get",
   path: "auth/login/kakao/callback",
+  tags: [TAG],
   request: {
     query: z.object({
       code: z.string(),
@@ -48,6 +52,7 @@ export const kakaoLoginCallback = createRoute({
   summary: "Kakao Login Callback 호출 버전",
   method: "post",
   path: "auth/login/kakao/callback",
+  tags: [TAG],
   request: {
     body: {
       content: {

@@ -15,10 +15,13 @@ import {
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
+const TAG = "groups";
+
 export const create = createRoute({
   summary: "새로운 그룹 생성",
   method: "post",
   path: "/groups",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     body: {
@@ -42,6 +45,7 @@ export const list = createRoute({
   summary: "사용자가 속한 그룹 목록 조회",
   method: "get",
   path: "/groups",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   responses: {
     [status.OK]: {
@@ -55,6 +59,7 @@ export const update = createRoute({
   summary: "그룹 정보 수정",
   method: "patch",
   path: "/groups/{id}",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     body: {
@@ -87,6 +92,7 @@ export const detail = createRoute({
   summary: "그룹 상세 조회",
   method: "get",
   path: "/groups/{id}",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,
@@ -111,6 +117,7 @@ export const remove = createRoute({
   summary: "그룹 삭제",
   method: "delete",
   path: "/groups/{id}",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,
@@ -138,6 +145,7 @@ export const listMembers = createRoute({
   summary: "그룹 멤버 목록 조회",
   method: "get",
   path: "/groups/{id}/members",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,
@@ -158,6 +166,7 @@ export const deleteMembers = createRoute({
   summary: "그룹 멤버 일괄 삭제",
   method: "delete",
   path: "/groups/{id}/members",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,
@@ -193,6 +202,7 @@ export const createInviteLink = createRoute({
   summary: "그룹 초대 링크 생성",
   method: "post",
   path: "/groups/{id}/invites",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,
@@ -221,6 +231,7 @@ export const listInvites = createRoute({
   summary: "그룹 초대 링크 목록 조회",
   method: "get",
   path: "/groups/{id}/invites",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,
@@ -245,6 +256,7 @@ export const joinInviteLink = createRoute({
   summary: "그룹 초대 링크로 그룹 가입",
   method: "post",
   path: "/groups/{id}/join",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     params: GroupParamsSchema,

@@ -8,10 +8,14 @@ import { ErrorResponseSchema } from "@/shared/schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
+const TAG = "users";
+
 export const profile = createRoute({
+  summary: "사용자 정보 조회",
   method: "get",
-  path: "/me",
+  path: "/users/me",
   description: "로그인한 사용자 정보 조회",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   responses: {
     [status.OK]: {
@@ -34,13 +38,15 @@ export const profile = createRoute({
 });
 
 export const updateProfile = createRoute({
+  summary: "사용자 정보 수정",
   method: "patch",
-  path: "/me",
-  description: "로그인한 사용자 프로필 수정",
+  path: "/users/me",
+  description: "로그인한 사용자 정보 수정",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     body: {
-      description: "수정할 사용자 프로필 정보",
+      description: "수정할 사용자 정보",
       content: {
         "application/json": {
           schema: UpdateProfileJsonSchema,

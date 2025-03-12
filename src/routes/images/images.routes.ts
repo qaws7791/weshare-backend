@@ -7,10 +7,13 @@ import {
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
+const TAG = "images";
+
 export const uploadOne = createRoute({
   summary: "단일 이미지 업로드",
   method: "post",
   path: "/images",
+  tags: [TAG],
   middleware: [isAuthenticated] as const,
   request: {
     body: {
