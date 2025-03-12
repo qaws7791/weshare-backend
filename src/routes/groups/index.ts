@@ -1,6 +1,6 @@
 import { GROUP_ROLE } from "@/lib/group-role";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import db from "../../database";
 import { groupImages, groupMembers, groups } from "../../database/schema";
 import * as routes from "./groups.routes";
@@ -263,6 +263,114 @@ app.openapi(routes.remove, async (c) => {
     });
 
     return c.newResponse(null, 204);
+  } catch {
+    return c.json(
+      {
+        status: "fail",
+        code: 500,
+        message: "Internal server error",
+      },
+      500,
+    );
+  }
+});
+
+app.openapi(routes.listMembers, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  const result = await db.query.groupMembers.findMany({
+    with: {
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          profileImage: true,
+        },
+      },
+    },
+    where: eq(groupMembers.groupId, id),
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Group members fetched successfully",
+    data: result.map(({ user, ...groupMember }) => ({
+      id: user.id.toString(),
+      username: user.username,
+      profileImage: user.profileImage,
+      role: groupMember.role,
+      joinedAt: groupMember.createdAt.toISOString(),
+    })),
+  });
+});
+
+app.openapi(routes.deleteMembers, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+  const { ids } = c.req.valid("json");
+  const deleteIds = ids.map((id) => Number(id));
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to delete this group",
+      },
+      403,
+    );
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(groupMembers)
+        .where(
+          and(
+            eq(groupMembers.groupId, id),
+            inArray(groupMembers.userId, deleteIds),
+          ),
+        );
+    });
+
+    return c.json({
+      status: "success",
+      code: 200,
+      message: "Group members deleted successfully",
+    });
   } catch {
     return c.json(
       {

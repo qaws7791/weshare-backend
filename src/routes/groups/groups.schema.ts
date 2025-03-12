@@ -36,3 +36,17 @@ export const GroupUpdateJsonSchema = z.object({
 export const GroupParamsSchema = z.object({
   id: z.string(),
 });
+
+export const GroupMemberListSchema = z.array(
+  z.object({
+    id: z.string(),
+    username: z.string(),
+    profileImage: z.string(),
+    role: z.string(),
+    joinedAt: z.string(),
+  }),
+);
+
+export const GroupMembersDeleteSchema = z.object({
+  ids: z.array(z.string()),
+});
