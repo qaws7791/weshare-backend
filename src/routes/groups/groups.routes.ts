@@ -3,6 +3,7 @@ import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   GroupCreateJsonSchema,
   GroupDetailSchema,
+  GroupInviteListSchema,
   GroupInviteSchema,
   GroupListSchema,
   GroupMemberListSchema,
@@ -209,6 +210,30 @@ export const createInviteLink = createRoute({
     },
     [status.CONFLICT]: {
       description: "Invite link already exists",
+      content: errorContent(),
+    },
+  },
+});
+
+export const listInvites = createRoute({
+  summary: "그룹 초대 링크 목록 조회",
+  method: "get",
+  path: "/groups/{id}/invites",
+  middleware: [isAuthenticated] as const,
+  request: {
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.OK]: {
+      description: "List group invites",
+      content: resourceContent(GroupInviteListSchema),
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member of this group",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
       content: errorContent(),
     },
   },

@@ -458,4 +458,54 @@ app.openapi(routes.createInviteLink, async (c) => {
   });
 });
 
+app.openapi(routes.listInvites, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to list invite links",
+      },
+      403,
+    );
+  }
+
+  const result = await db.query.groupInvites.findMany({
+    where: eq(groupInvites.groupId, id),
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Invite links fetched successfully",
+    data: result.map((invite) => ({
+      id: invite.id.toString(),
+      code: invite.code,
+      groupId: invite.groupId.toString(),
+      isExpired: invite.isExpired,
+      createdAt: invite.createdAt.toISOString(),
+      updatedAt: invite.updatedAt.toISOString(),
+    })),
+  });
+});
+
 export default app;

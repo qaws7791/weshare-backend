@@ -59,3 +59,14 @@ export const GroupInviteSchema = z.object({
   updatedAt: z.string(),
   groupId: z.string(),
 });
+
+export const GroupInviteListSchema = z.array(
+  z.object({
+    id: z.string(),
+    code: z.string(),
+    isExpired: z.boolean(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    groupId: z.string(),
+  }),
+);
