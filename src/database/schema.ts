@@ -42,7 +42,11 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }),
   provider: text("provider"),
   providerId: text("provider_id"),
-  profileImage: text("profile_image").notNull(),
+  profileImage: text("profile_image")
+    .notNull()
+    .default(
+      "https://res.cloudinary.com/dtjd9hwpu/image/upload/v1741876822/profile/default.webp",
+    ),
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
   passwordHash: text("password_hash"),
