@@ -40,11 +40,12 @@ export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   username: varchar("username", { length: 100 }).notNull(),
   email: varchar("email", { length: 255 }),
-  provider: text("provider").notNull(),
-  providerId: text("provider_id").notNull(),
+  provider: text("provider"),
+  providerId: text("provider_id"),
   profileImage: text("profile_image").notNull(),
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
+  passwordHash: text("password_hash"),
 });
 
 export const usersRelations = relations(users, ({ many }) => ({
