@@ -34,7 +34,7 @@ const baseColumns = {
  * @property {string} provider - 사용자 제공자 (ex. kakao,naver etc.)
  * @property {string} providerId - 사용자 제공자에서 제공하는 ID (ex. kakao,naver etc.)
  * @property {string} profileImage - 사용자 프로필 이미지 URL
-
+ * @property {string} passwordHash - 사용자 비밀번호 해시
  */
 export const users = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
