@@ -8,6 +8,7 @@ import sessionMiddleware from "./middlewares/session.middleware";
 import auth from "./routes/auth";
 import groups from "./routes/groups";
 import images from "./routes/images";
+import invites from "./routes/invites";
 import items from "./routes/items.route";
 import reservations from "./routes/reservations.route";
 import users from "./routes/users";
@@ -48,6 +49,7 @@ app.route("/", users);
 app.route("/", groups);
 app.route("/", items);
 app.route("/", reservations);
+app.route("/", invites);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
