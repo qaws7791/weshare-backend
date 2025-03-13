@@ -1,9 +1,76 @@
 import { resourceContent } from "@/lib/create-schema";
-import { KakaoLoginUrlSchema } from "@/routes/auth/auth.schema";
+import {
+  EmailLoginJsonSchema,
+  EmailRegisterJsonSchema,
+  KakaoLoginUrlSchema,
+  UserSchema,
+} from "@/routes/auth/auth.schema";
 import { createRoute, z } from "@hono/zod-openapi";
 import status from "http-status";
 
 const TAG = "auth";
+
+export const emailRegister = createRoute({
+  summary: "이메일 회원가입",
+  method: "post",
+  path: "auth/register",
+  tags: [TAG],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: EmailRegisterJsonSchema,
+        },
+      },
+      description: "회원가입",
+    },
+  },
+  responses: {
+    [status.CREATED]: {
+      description: "회원가입 성공",
+      content: resourceContent(UserSchema),
+    },
+    [status.BAD_REQUEST]: {
+      description: "잘못된 값을 전달받음",
+    },
+  },
+});
+
+export const emailLogin = createRoute({
+  summary: "이메일 로그인",
+  method: "post",
+  path: "auth/login",
+  tags: [TAG],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: EmailLoginJsonSchema,
+        },
+      },
+      description: "이메일 로그인",
+    },
+  },
+  responses: {
+    [status.OK]: {
+      description: "로그인 성공",
+      headers: {
+        "Set-Cookie": {
+          description: "session cookie",
+          schema: {
+            type: "string",
+            example:
+              "s_id=757075c8e9e3d226; Path=/; Expires=Thu, 10 Apr 2025 14:20:19 GMT; HttpOnly; Secure; SameSite=Lax",
+          },
+        },
+      },
+      content: resourceContent(UserSchema),
+    },
+    [status.UNAUTHORIZED]: {
+      description: "로그인 실패",
+    },
+  },
+});
 
 export const kakaoLogin = createRoute({
   summary: "Kakao Login URL 가져오기",

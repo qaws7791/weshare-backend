@@ -1,11 +1,12 @@
 import db from "@/database";
 import { users } from "@/database/schema";
 import { KakaoOAuth } from "@/lib/kakao-ouath";
+import { PasswordManager } from "@/lib/password";
 import { SessionManager } from "@/lib/session";
 import { Context } from "@/types/hono";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { v2 as cloudinary } from "cloudinary";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { setCookie } from "hono/cookie";
 import * as routes from "./auth.routes";
 const app = new OpenAPIHono<Context>();
@@ -93,6 +94,64 @@ app.openapi(routes.kakaoLoginCallback, async (c) => {
       .returning();
   }
 
+  const session = await SessionManager.createSession(user.id);
+  if (!session) {
+    return c.json({ error: "Failed to create session" }, 500);
+  }
+  setCookie(c, "s_id", session.id, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Lax",
+    expires: session.expiresAt,
+  });
+  return c.json({ message: "Login successful" });
+});
+
+app.openapi(routes.emailRegister, async (c) => {
+  const { email, password, username } = await c.req.valid("json");
+  const hashedPassword = await PasswordManager.hashPassword(password);
+  const [user] = await db
+    .insert(users)
+    .values({
+      email,
+      username,
+      passwordHash: hashedPassword,
+      provider: null,
+      providerId: null,
+    })
+    .returning();
+  if (!user) {
+    return c.json({ error: "Failed to create user" }, 500);
+  }
+  const session = await SessionManager.createSession(user.id);
+  if (!session) {
+    return c.json({ error: "Failed to create session" }, 500);
+  }
+  setCookie(c, "s_id", session.id, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "Lax",
+    expires: session.expiresAt,
+  });
+  return c.json({ message: "User registered successfully" });
+});
+
+app.openapi(routes.emailLogin, async (c) => {
+  const { email, password } = await c.req.valid("json");
+  const user = await db.query.users.findFirst({
+    where: and(eq(users.email, email), isNull(users.provider)),
+  });
+  if (!user || !user.passwordHash) {
+    return c.json({ error: "User not found" }, 404);
+  }
+
+  const isPasswordValid = await PasswordManager.verifyPassword(
+    password,
+    user.passwordHash,
+  );
+  if (!isPasswordValid) {
+    return c.json({ error: "Invalid password" }, 401);
+  }
   const session = await SessionManager.createSession(user.id);
   if (!session) {
     return c.json({ error: "Failed to create session" }, 500);
