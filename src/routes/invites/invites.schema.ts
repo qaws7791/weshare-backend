@@ -18,3 +18,12 @@ export const InviteDetailSchema = z.object({
     name: z.string(),
   }),
 });
+
+export const InviteJoinResponseSchema = z.object({
+  groupId: z.string(),
+  userId: z.string(),
+  role: z.string(),
+  joinedAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
