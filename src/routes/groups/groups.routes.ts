@@ -7,6 +7,7 @@ import {
   GroupInviteListSchema,
   GroupInviteSchema,
   GroupItemJsonSchema,
+  GroupItemParamsSchema,
   GroupItemSchema,
   GroupJoinJsonSchema,
   GroupListSchema,
@@ -365,6 +366,44 @@ export const createItem = createRoute({
   responses: {
     [status.OK]: {
       description: "Create group item",
+      content: resourceContent(GroupItemSchema),
+    },
+    [status.BAD_REQUEST]: {
+      description: "Invalid group item data",
+      content: errorContent(),
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member or admin of this group",
+      content: errorContent(),
+    },
+  },
+});
+
+export const updateItem = createRoute({
+  summary: "그룹 아이템 수정",
+  method: "patch",
+  path: "/groups/{id}/items/{itemId}",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: GroupItemParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: GroupItemJsonSchema,
+        },
+      },
+      description: "Group item to update",
+    },
+  },
+  responses: {
+    [status.OK]: {
+      description: "Update group item",
       content: resourceContent(GroupItemSchema),
     },
     [status.BAD_REQUEST]: {
