@@ -78,3 +78,28 @@ export const GroupJoinJsonSchema = z.object({
 export const GroupInviteLinkSchema = z.object({
   groupId: z.string(),
 });
+
+export const GroupItemJsonSchema = z.object({
+  name: z.string().min(1).max(50),
+  description: z.string().max(500),
+  caution: z.string().max(500).optional(),
+  pickupLocation: z.string().max(100),
+  returnLocation: z.string().max(100),
+  images: z.array(z.string()).min(1).max(4),
+  quantity: z.number().min(1).max(999),
+});
+
+export const GroupItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string(),
+  caution: z.string(),
+  pickupLocation: z.string(),
+  returnLocation: z.string(),
+  images: z.array(z.string()),
+  quantity: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  groupId: z.string(),
+  group: GroupDetailSchema,
+});

@@ -6,6 +6,8 @@ import {
   GroupInviteLinkSchema,
   GroupInviteListSchema,
   GroupInviteSchema,
+  GroupItemJsonSchema,
+  GroupItemSchema,
   GroupJoinJsonSchema,
   GroupListSchema,
   GroupMemberListSchema,
@@ -333,6 +335,44 @@ export const joinInviteLink = createRoute({
     },
     [status.CONFLICT]: {
       description: "Already a member of this group",
+      content: errorContent(),
+    },
+  },
+});
+
+export const createItem = createRoute({
+  summary: "그룹 아이템 생성",
+  method: "post",
+  path: "/groups/{id}/items",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: GroupParamsSchema,
+    body: {
+      content: {
+        "application/json": {
+          schema: GroupItemJsonSchema,
+        },
+      },
+      description: "Group item to create",
+    },
+  },
+  responses: {
+    [status.OK]: {
+      description: "Create group item",
+      content: resourceContent(GroupItemSchema),
+    },
+    [status.BAD_REQUEST]: {
+      description: "Invalid group item data",
+      content: errorContent(),
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member or admin of this group",
       content: errorContent(),
     },
   },

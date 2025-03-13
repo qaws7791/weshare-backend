@@ -8,6 +8,7 @@ import {
   groupInvites,
   groupMembers,
   groups,
+  items,
 } from "../../database/schema";
 import * as routes from "./groups.routes";
 const app = new OpenAPIHono();
@@ -560,6 +561,120 @@ app.openapi(routes.joinInviteLink, async (c) => {
     message: "Joined group successfully",
     data: {
       groupId: id,
+    },
+  });
+});
+
+app.openapi(routes.createItem, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+  const json = c.req.valid("json");
+
+  const {
+    name,
+    description,
+    images,
+    pickupLocation,
+    returnLocation,
+    quantity,
+    caution,
+  } = json;
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+    with: {
+      group: {
+        columns: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        with: {
+          groupImages: {
+            columns: {
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to create group item",
+      },
+      403,
+    );
+  }
+
+  const groupItem = await db.transaction(async (tx) => {
+    const [item] = await tx
+      .insert(items)
+      .values({
+        name,
+        description,
+        caution: caution || "",
+        pickupLocation,
+        returnLocation,
+        quantity,
+        groupId: id,
+      })
+      .returning();
+
+    const groupItemImages = images.map((image) => ({
+      itemId: item.id,
+      imageUrl: image,
+      groupId: id,
+    }));
+
+    await tx.insert(groupImages).values(groupItemImages);
+
+    return item;
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Group item created successfully",
+    data: {
+      id: groupItem.id.toString(),
+      name: groupItem.name,
+      description: groupItem.description,
+      caution: groupItem.caution,
+      pickupLocation: groupItem.pickupLocation,
+      returnLocation: groupItem.returnLocation,
+      quantity: groupItem.quantity,
+      images,
+      createdAt: groupItem.createdAt.toISOString(),
+      updatedAt: groupItem.updatedAt.toISOString(),
+      groupId: groupItem.groupId.toString(),
+      group: {
+        id: groupMember.group.id.toString(),
+        name: groupMember.group.name,
+        description: groupMember.group.description,
+        image: groupMember.group.groupImages[0]?.imageUrl,
+        createdBy: groupMember.userId.toString(),
+        createdAt: groupMember.group.createdAt.toISOString(),
+        updatedAt: groupMember.group.updatedAt.toISOString(),
+      },
     },
   });
 });
