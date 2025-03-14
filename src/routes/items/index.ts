@@ -1,5 +1,5 @@
 import db from "@/database";
-import { groupMembers } from "@/database/schema";
+import { groupMembers, items } from "@/database/schema";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { eq } from "drizzle-orm";
 import * as routes from "./items.routes";
@@ -50,6 +50,54 @@ app.openapi(routes.list, async (c) => {
     code: 200,
     message: "Items fetched successfully",
     data: itemsWithGroup,
+  });
+});
+
+app.openapi(routes.detail, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const itemData = await db.query.items.findFirst({
+    where: eq(items.id, parseInt(id)),
+    with: {
+      itemImages: true,
+      group: {
+        with: {
+          groupImages: true,
+          groupMembers: {
+            where: eq(groupMembers.userId, user.id),
+          },
+        },
+      },
+    },
+  });
+
+  if (!itemData || itemData.group.groupMembers.length === 0) {
+    return c.json({
+      status: "fail",
+      code: 404,
+      message: "Item not found",
+    });
+  }
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Item fetched successfully",
+    data: {
+      ...itemData,
+      id: itemData.id.toString(),
+      images: itemData.itemImages.map((image) => image.imageUrl),
+      group: {
+        id: itemData.group.id,
+        name: itemData.group.name,
+        description: itemData.group.description,
+        image: itemData.group.groupImages[0]?.imageUrl,
+        createdBy: itemData.group.createdBy.toString(),
+        createdAt: itemData.group.createdAt,
+        updatedAt: itemData.group.updatedAt,
+      },
+    },
   });
 });
 
