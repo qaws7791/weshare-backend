@@ -103,6 +103,7 @@ export const GroupItemSchema = z.object({
   groupId: z.string(),
   group: GroupDetailSchema,
 });
+export const GroupItemListSchema = z.array(GroupItemSchema);
 
 export const GroupItemParamsSchema = z.object({
   id: z.string(),

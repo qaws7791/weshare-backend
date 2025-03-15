@@ -832,4 +832,97 @@ app.openapi(routes.updateItem, async (c) => {
   });
 });
 
+app.openapi(routes.listItems, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+    with: {
+      group: {
+        columns: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        with: {
+          groupImages: {
+            columns: {
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  const result = await db.query.items.findMany({
+    where: eq(items.groupId, id),
+    with: {
+      itemImages: {
+        columns: {
+          imageUrl: true,
+        },
+      },
+      group: {
+        columns: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        with: {
+          groupImages: {
+            columns: {
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Group items fetched successfully",
+    data: result.map((item) => ({
+      id: item.id.toString(),
+      name: item.name,
+      description: item.description,
+      caution: item.caution,
+      pickupLocation: item.pickupLocation,
+      returnLocation: item.returnLocation,
+      quantity: item.quantity,
+      images: item.itemImages.map((image) => image.imageUrl),
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+      groupId: item.groupId.toString(),
+      group: {
+        id: groupMember.group.id.toString(),
+        name: groupMember.group.name,
+        description: groupMember.group.description,
+        image: groupMember.group.groupImages[0]?.imageUrl,
+        createdBy: groupMember.userId.toString(),
+        createdAt: groupMember.group.createdAt.toISOString(),
+        updatedAt: groupMember.group.updatedAt.toISOString(),
+      },
+    })),
+  });
+});
+
 export default app;
