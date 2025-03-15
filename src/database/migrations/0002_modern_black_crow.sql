@@ -1,0 +1,2 @@
+ALTER TABLE "reservations" ALTER COLUMN "status" SET DEFAULT 'pending';--> statement-breakpoint
+ALTER TABLE "users" ALTER COLUMN "profile_image" SET DEFAULT 'https://res.cloudinary.com/dtjd9hwpu/image/upload/v1741876822/profile/default.webp';

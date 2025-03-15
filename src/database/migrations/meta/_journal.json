@@ -15,6 +15,13 @@
       "when": 1741874504771,
       "tag": "0001_icy_mother_askani",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1742018392290,
+      "tag": "0002_modern_black_crow",
+      "breakpoints": true
     }
   ]
 }
