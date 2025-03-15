@@ -1,61 +1,12 @@
 import db from "@/database";
 import { groupMembers, items, reservations } from "@/database/schema";
-import { generateTimeSlots } from "@/routes/items/items.helpers";
+import {
+  generateTimeSlots,
+  getMaxReserveQuantity,
+} from "@/routes/items/items.service";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, count, eq, gte, lte, or } from "drizzle-orm";
+import { and, eq, gte, lte, or } from "drizzle-orm";
 import * as routes from "./items.routes";
-
-/**
- * 예약들을 입력으로 받아 동시에 사용된 최대 수량을 반환합니다. 타임 슬롯은 30분 간격이다.
- */
-const getMaxReserveQuantity = (
-  reservations: {
-    startTime: Date;
-    endTime: Date;
-    quantity: number;
-  }[],
-): number => {
-  const timeSlots: { [key: string]: number } = {};
-  reservations.forEach((reservation) => {
-    const startTime = new Date(reservation.startTime).getTime();
-    const endTime = new Date(reservation.endTime).getTime();
-    const startSlot = Math.floor(startTime / (30 * 60 * 1000));
-    const endSlot = Math.floor(endTime / (30 * 60 * 1000));
-    for (let i = startSlot; i <= endSlot; i++) {
-      if (!timeSlots[i]) {
-        timeSlots[i] = 0;
-      }
-      timeSlots[i] += reservation.quantity;
-    }
-  });
-  return Math.max(...Object.values(timeSlots));
-};
-
-export const updatePendingReservations = async () => {
-  const now = new Date();
-  const [pendingReservations] = await db
-    .select({ count: count() })
-    .from(reservations)
-    .where(
-      and(eq(reservations.status, "pending"), lte(reservations.startTime, now)),
-    );
-
-  if (pendingReservations.count > 0) {
-    await db
-      .update(reservations)
-      .set({ status: "in-use" })
-      .where(
-        and(
-          eq(reservations.status, "pending"),
-          lte(reservations.startTime, now),
-        ),
-      );
-  }
-
-  return {
-    updatedCount: pendingReservations.count,
-  };
-};
 
 const app = new OpenAPIHono();
 

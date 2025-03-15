@@ -1,4 +1,4 @@
-import { validateReservationTime } from "@/routes/items/items.helpers";
+import { validateReservationTime } from "@/routes/items/items.service";
 import { z } from "@hono/zod-openapi";
 
 export const ItemDetailSchema = z.object({
