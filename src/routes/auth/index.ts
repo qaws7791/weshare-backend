@@ -1,6 +1,6 @@
 import db from "@/database";
 import { users } from "@/database/schema";
-import { KakaoOAuth } from "@/lib/kakao-ouath";
+import { KakaoOAuth } from "@/lib/kakao-oauth";
 import { PasswordManager } from "@/lib/password";
 import { SessionManager } from "@/lib/session";
 import { Context } from "@/types/hono";
