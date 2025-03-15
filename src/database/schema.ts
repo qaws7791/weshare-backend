@@ -1,3 +1,4 @@
+import { RESERVATION_STATUS } from "@/routes/reservations/reservations.constants";
 import { relations } from "drizzle-orm";
 import {
   boolean,
@@ -290,7 +291,7 @@ export const reservations = pgTable("reservations", {
   itemId: integer("item_id")
     .notNull()
     .references(() => items.id),
-  status: text("status").notNull().default("pending"),
+  status: text("status").notNull().default(RESERVATION_STATUS.PENDING),
   quantity: integer("quantity").notNull(),
   reservationTime: timestamp("reservation_time", {
     withTimezone: true,

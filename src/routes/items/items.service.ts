@@ -1,5 +1,6 @@
 import db from "@/database";
 import { reservations } from "@/database/schema";
+import { RESERVATION_STATUS } from "@/routes/reservations/reservations.constants";
 import { and, count, eq, lte } from "drizzle-orm";
 
 /**
@@ -151,16 +152,19 @@ export const updatePendingReservations = async () => {
     .select({ count: count() })
     .from(reservations)
     .where(
-      and(eq(reservations.status, "pending"), lte(reservations.startTime, now)),
+      and(
+        eq(reservations.status, RESERVATION_STATUS.PENDING),
+        lte(reservations.startTime, now),
+      ),
     );
 
   if (pendingReservations.count > 0) {
     await db
       .update(reservations)
-      .set({ status: "in-use" })
+      .set({ status: RESERVATION_STATUS.IN_USE })
       .where(
         and(
-          eq(reservations.status, "pending"),
+          eq(reservations.status, RESERVATION_STATUS.PENDING),
           lte(reservations.startTime, now),
         ),
       );
@@ -177,7 +181,10 @@ export const updateInuseReservations = async () => {
     .select({ count: count() })
     .from(reservations)
     .where(
-      and(eq(reservations.status, "in-use"), lte(reservations.endTime, now)),
+      and(
+        eq(reservations.status, RESERVATION_STATUS.IN_USE),
+        lte(reservations.endTime, now),
+      ),
     );
 
   if (inuseReservations.count > 0) {
@@ -185,7 +192,10 @@ export const updateInuseReservations = async () => {
       .update(reservations)
       .set({ status: "completed" })
       .where(
-        and(eq(reservations.status, "in-use"), lte(reservations.endTime, now)),
+        and(
+          eq(reservations.status, RESERVATION_STATUS.IN_USE),
+          lte(reservations.endTime, now),
+        ),
       );
   }
 
