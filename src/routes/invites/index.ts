@@ -96,7 +96,7 @@ app.openapi(routes.acceptInvite, async (c) => {
     );
   }
 
-  const [groupMemeber] = await db
+  const [groupMember] = await db
     .insert(groupMembers)
     .values({
       groupId: inviteData.groupId,
@@ -110,12 +110,12 @@ app.openapi(routes.acceptInvite, async (c) => {
     code: 200,
     message: "Joined group successfully",
     data: {
-      groupId: groupMemeber.groupId.toString(),
-      userId: groupMemeber.userId.toString(),
-      role: groupMemeber.role,
-      joinedAt: groupMemeber.createdAt.toISOString(),
-      createdAt: groupMemeber.createdAt.toISOString(),
-      updatedAt: groupMemeber.updatedAt.toISOString(),
+      groupId: groupMember.groupId.toString(),
+      userId: groupMember.userId.toString(),
+      role: groupMember.role,
+      joinedAt: groupMember.createdAt.toISOString(),
+      createdAt: groupMember.createdAt.toISOString(),
+      updatedAt: groupMember.updatedAt.toISOString(),
     },
   });
 });
