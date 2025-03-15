@@ -49,7 +49,7 @@ app.openapi(routes.list, async (c) => {
       image: group.groupImages[0]?.imageUrl,
       createdBy: groupMember.userId.toString(),
       createdAt: group.createdAt.toISOString(),
-      updatedAt: group.updatedAt.toDateString(),
+      updatedAt: group.updatedAt.toISOString(),
     })),
   });
 });
@@ -99,7 +99,7 @@ app.openapi(routes.create, async (c) => {
       description: groupData.description,
       createdBy: groupData.createdBy.toString(),
       createdAt: groupData.createdAt.toISOString(),
-      updatedAt: groupData.updatedAt.toDateString(),
+      updatedAt: groupData.updatedAt.toISOString(),
       image: groupImage.imageUrl,
     },
   });
@@ -156,7 +156,7 @@ app.openapi(routes.detail, async (c) => {
       image: result.groupImages[0]?.imageUrl,
       createdBy: result.createdBy.toString(),
       createdAt: result.createdAt.toISOString(),
-      updatedAt: result.updatedAt.toDateString(),
+      updatedAt: result.updatedAt.toISOString(),
     },
   });
 });
@@ -223,7 +223,7 @@ app.openapi(routes.update, async (c) => {
       description: groupData.description,
       createdBy: groupData.createdBy.toString(),
       createdAt: groupData.createdAt.toISOString(),
-      updatedAt: groupData.updatedAt.toDateString(),
+      updatedAt: groupData.updatedAt.toISOString(),
       image,
     },
   });
