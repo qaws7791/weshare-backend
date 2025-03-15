@@ -1,0 +1,56 @@
+import { errorContent, resourceContent } from "@/lib/create-schema";
+import { isAuthenticated } from "@/middlewares/auth.middleware";
+import {
+  ReservationListSchema,
+  ReservationParamsSchema,
+  ReservationSchema,
+} from "@/routes/reservations/reservations.schema";
+import { createRoute } from "@hono/zod-openapi";
+import status from "http-status";
+
+const TAG = "reservations";
+
+export const list = createRoute({
+  summary: "예약 목록",
+  method: "get",
+  path: "/reservations",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  responses: {
+    [status.OK]: {
+      description: "예약 목록",
+      content: resourceContent(ReservationListSchema),
+    },
+  },
+});
+
+export const detail = createRoute({
+  summary: "예약 상세",
+  method: "get",
+  path: "/reservations/{id}",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: ReservationParamsSchema,
+  },
+  responses: {
+    [status.OK]: {
+      description: "예약 상세",
+      content: resourceContent(ReservationSchema),
+    },
+    [status.NOT_FOUND]: {
+      description: "예약을 찾을 수 없습니다.",
+      content: errorContent(),
+    },
+  },
+});
