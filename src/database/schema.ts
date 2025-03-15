@@ -304,12 +304,6 @@ export const reservations = pgTable("reservations", {
   endTime: timestamp("end_time", {
     withTimezone: true,
   }).notNull(),
-  pickupTime: timestamp("pickup_time", {
-    withTimezone: true,
-  }),
-  returnTime: timestamp("return_time", {
-    withTimezone: true,
-  }),
   createdAt: baseColumns.createdAt,
   updatedAt: baseColumns.updatedAt,
 });
