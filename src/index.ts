@@ -1,6 +1,7 @@
 import { swaggerUI } from "@hono/swagger-ui";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { v2 as cloudinary } from "cloudinary";
+import { CronJob } from "cron";
 import { cors } from "hono/cors";
 import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
@@ -9,7 +10,7 @@ import auth from "./routes/auth";
 import groups from "./routes/groups";
 import images from "./routes/images";
 import invites from "./routes/invites";
-import items from "./routes/items.route";
+import items, { updatePendingReservations } from "./routes/items";
 import reservations from "./routes/reservations.route";
 import users from "./routes/users";
 import { Context } from "./types/hono";
@@ -71,6 +72,18 @@ app.doc("/doc", {
     title: "Hono API",
   },
 });
+
+const job = new CronJob("0 * * * * *", async () => {
+  const now = new Date();
+  console.log("Cron job running at", now.toLocaleTimeString());
+  updatePendingReservations().then((data) => {
+    console.log(
+      `Updated pending reservations: ${data.updatedCount} at`,
+      new Date().toLocaleTimeString(),
+    );
+  });
+});
+job.start();
 
 export default {
   port: 4000,
