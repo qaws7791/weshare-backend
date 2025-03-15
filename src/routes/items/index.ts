@@ -1,8 +1,61 @@
 import db from "@/database";
-import { groupMembers, items } from "@/database/schema";
+import { groupMembers, items, reservations } from "@/database/schema";
+import { generateTimeSlots } from "@/routes/items/items.helpers";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { eq } from "drizzle-orm";
+import { and, count, eq, gte, lte, or } from "drizzle-orm";
 import * as routes from "./items.routes";
+
+/**
+ * 예약들을 입력으로 받아 동시에 사용된 최대 수량을 반환합니다. 타임 슬롯은 30분 간격이다.
+ */
+const getMaxReserveQuantity = (
+  reservations: {
+    startTime: Date;
+    endTime: Date;
+    quantity: number;
+  }[],
+): number => {
+  const timeSlots: { [key: string]: number } = {};
+  reservations.forEach((reservation) => {
+    const startTime = new Date(reservation.startTime).getTime();
+    const endTime = new Date(reservation.endTime).getTime();
+    const startSlot = Math.floor(startTime / (30 * 60 * 1000));
+    const endSlot = Math.floor(endTime / (30 * 60 * 1000));
+    for (let i = startSlot; i <= endSlot; i++) {
+      if (!timeSlots[i]) {
+        timeSlots[i] = 0;
+      }
+      timeSlots[i] += reservation.quantity;
+    }
+  });
+  return Math.max(...Object.values(timeSlots));
+};
+
+export const updatePendingReservations = async () => {
+  const now = new Date();
+  const [pendingReservations] = await db
+    .select({ count: count() })
+    .from(reservations)
+    .where(
+      and(eq(reservations.status, "pending"), lte(reservations.startTime, now)),
+    );
+
+  if (pendingReservations.count > 0) {
+    await db
+      .update(reservations)
+      .set({ status: "in-use" })
+      .where(
+        and(
+          eq(reservations.status, "pending"),
+          lte(reservations.startTime, now),
+        ),
+      );
+  }
+
+  return {
+    updatedCount: pendingReservations.count,
+  };
+};
 
 const app = new OpenAPIHono();
 
@@ -98,6 +151,203 @@ app.openapi(routes.detail, async (c) => {
         updatedAt: itemData.group.updatedAt,
       },
     },
+  });
+});
+
+app.openapi(routes.reserveItem, async (c) => {
+  // 물품 예약하기
+  // 1. 사용자가 속한 그룹의 물품인지 확인
+  // 2. 해당 개수, 해당 시간에 예약 가능한지 기존의 예약과 물품 정보들을 통해 확인
+  // 3. 예약하기
+  // 4. 예약 완료 후 예약 정보를 반환
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+  const { startTime, endTime, quantity } = c.req.valid("json");
+  const itemData = await db.query.items.findFirst({
+    where: eq(items.id, parseInt(id)),
+    with: {
+      group: {
+        with: {
+          groupMembers: {
+            where: eq(groupMembers.userId, user.id),
+          },
+        },
+      },
+    },
+  });
+
+  if (!itemData || itemData.group.groupMembers.length === 0) {
+    return c.json({
+      status: "fail",
+      code: 404,
+      message: "Item not found",
+    });
+  }
+
+  const group = itemData.group;
+
+  const groupId = group.id;
+  const itemId = itemData.id;
+  const itemQuantity = itemData.quantity;
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
+  if (quantity > itemQuantity) {
+    return c.json({
+      status: "fail",
+      code: 400,
+      message: "Not enough quantity",
+    });
+  }
+
+  if (startDate.getSeconds() !== 0 || endDate.getSeconds() !== 0) {
+    return c.json({
+      status: "fail",
+      code: 400,
+      message: "Invalid time",
+    });
+  }
+  // 시간대별로 예약된 최대 수량을 계산
+
+  const reservationsData = await db.query.reservations.findMany({
+    where: and(
+      eq(reservations.itemId, itemId),
+      or(
+        lte(reservations.startTime, endDate),
+        gte(reservations.endTime, startDate),
+      ),
+    ),
+  });
+
+  const maxReserveQuantity = getMaxReserveQuantity(reservationsData);
+  const availableQuantity = itemQuantity - maxReserveQuantity;
+  if (quantity > availableQuantity) {
+    return c.json({
+      status: "fail",
+      code: 400,
+      message: "Not enough quantity",
+    });
+  }
+
+  const [reservation] = await db
+    .insert(reservations)
+    .values({
+      userId: user.id,
+      itemId: itemId,
+      startTime: startDate,
+      endTime: endDate,
+      quantity: quantity,
+    })
+    .returning();
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Item reserved successfully",
+    data: {
+      id: reservation.id.toString(),
+      userId: reservation.userId.toString(),
+      itemId: reservation.itemId.toString(),
+      status: reservation.status,
+      quantity: reservation.quantity,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      reservationTime: reservation.reservationTime,
+      pickupTime: reservation.pickupTime,
+      returnTime: reservation.returnTime,
+      createdAt: reservation.createdAt,
+      updatedAt: reservation.updatedAt,
+      groupId: groupId,
+    },
+  });
+});
+
+app.openapi(routes.availableTimes, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const itemData = await db.query.items.findFirst({
+    where: eq(items.id, parseInt(id)),
+    with: {
+      group: {
+        with: {
+          groupMembers: {
+            where: eq(groupMembers.userId, user.id),
+          },
+        },
+      },
+    },
+  });
+
+  if (!itemData || itemData.group.groupMembers.length === 0) {
+    return c.json({
+      status: "fail",
+      code: 404,
+      message: "Item not found",
+    });
+  }
+
+  const nowTime = new Date();
+  const endTime = new Date(
+    nowTime.getFullYear(),
+    nowTime.getMonth(),
+    nowTime.getDate() + 7,
+    0,
+    0,
+    0,
+  );
+  const timeSlots = generateTimeSlots();
+
+  // 현재 시간으로부터 7일 후 자정까지의 예약된 내역을 모두 가져온다.
+  const reservationsData = await db.query.reservations.findMany({
+    where: and(
+      eq(reservations.itemId, itemData.id),
+      or(
+        lte(reservations.startTime, endTime),
+        gte(reservations.endTime, nowTime),
+      ),
+    ),
+  });
+
+  // 예약된 내역을 통해 타임슬롯에 예약 가능한 수량을 계산한 타임슬롯을 생성한다.
+
+  const timeSlotWithAvailableQuantity: {
+    startTime: Date;
+    endTime: Date;
+    duration: number;
+    slotStock: number;
+    slotReservedCount: number;
+    slotAvailableCount: number;
+  }[] = timeSlots.map((timeSlot) => {
+    const startTime = new Date(timeSlot.startTime);
+    const endTime = new Date(timeSlot.endTime);
+    const duration = timeSlot.duration;
+    const slotStock = itemData.quantity;
+
+    const slotReservedCount = getMaxReserveQuantity(
+      reservationsData.filter((reservation) => {
+        const reservationStartTime = new Date(reservation.startTime).getTime();
+        const reservationEndTime = new Date(reservation.endTime).getTime();
+        return (
+          reservationStartTime <= endTime.getTime() &&
+          reservationEndTime >= startTime.getTime()
+        );
+      }),
+    );
+    return {
+      startTime,
+      endTime,
+      duration,
+      slotStock,
+      slotReservedCount,
+      slotAvailableCount: slotStock - slotReservedCount,
+    };
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Available time slots fetched successfully",
+    data: timeSlotWithAvailableQuantity,
   });
 });
 
