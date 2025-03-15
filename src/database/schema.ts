@@ -290,7 +290,7 @@ export const reservations = pgTable("reservations", {
   itemId: integer("item_id")
     .notNull()
     .references(() => items.id),
-  status: text("status").notNull(),
+  status: text("status").notNull().default("pending"),
   quantity: integer("quantity").notNull(),
   reservationTime: timestamp("reservation_time", {
     withTimezone: true,
