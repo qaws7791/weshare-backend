@@ -8,6 +8,7 @@
     "@hono/zod-openapi": "^0.19.2",
     "@hono/zod-validator": "^0.4.3",
     "cloudinary": "^2.5.1",
+    "cron": "^4.1.0",
     "dayjs": "^1.11.13",
     "drizzle-orm": "^0.40.0",
     "hono": "^4.7.4",
