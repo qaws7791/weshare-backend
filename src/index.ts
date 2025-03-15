@@ -15,7 +15,7 @@ import groups from "./routes/groups";
 import images from "./routes/images";
 import invites from "./routes/invites";
 import items from "./routes/items";
-import reservations from "./routes/reservations.route";
+import reservations from "./routes/reservations";
 import users from "./routes/users";
 import { Context } from "./types/hono";
 
