@@ -1,3 +1,7 @@
+import {
+  updateInuseReservations,
+  updatePendingReservations,
+} from "@/routes/items/items.service";
 import { swaggerUI } from "@hono/swagger-ui";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { v2 as cloudinary } from "cloudinary";
@@ -10,7 +14,7 @@ import auth from "./routes/auth";
 import groups from "./routes/groups";
 import images from "./routes/images";
 import invites from "./routes/invites";
-import items, { updatePendingReservations } from "./routes/items";
+import items from "./routes/items";
 import reservations from "./routes/reservations.route";
 import users from "./routes/users";
 import { Context } from "./types/hono";
@@ -76,12 +80,16 @@ app.doc("/doc", {
 const job = new CronJob("0 * * * * *", async () => {
   const now = new Date();
   console.log("Cron job running at", now.toLocaleTimeString());
-  updatePendingReservations().then((data) => {
-    console.log(
-      `Updated pending reservations: ${data.updatedCount} at`,
-      new Date().toLocaleTimeString(),
-    );
-  });
+  const inUsedReservations = await updatePendingReservations();
+  console.log(
+    `Updated reservations status to inUse: ${inUsedReservations.updatedCount} at`,
+    new Date().toLocaleTimeString(),
+  );
+  const endedReservations = await updateInuseReservations();
+  console.log(
+    `Updated reservations status to completed: ${endedReservations.updatedCount} at`,
+    new Date().toLocaleTimeString(),
+  );
 });
 job.start();
 
