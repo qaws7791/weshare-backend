@@ -3,14 +3,12 @@ import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   GroupCreateJsonSchema,
   GroupDetailSchema,
-  GroupInviteLinkSchema,
   GroupInviteListSchema,
   GroupInviteSchema,
   GroupItemJsonSchema,
   GroupItemListSchema,
   GroupItemParamsSchema,
   GroupItemSchema,
-  GroupJoinJsonSchema,
   GroupListSchema,
   GroupMemberListSchema,
   GroupMembersDeleteSchema,
@@ -296,47 +294,6 @@ export const listInvites = createRoute({
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
-      content: errorContent(),
-    },
-  },
-});
-
-export const joinInviteLink = createRoute({
-  summary: "그룹 초대 링크로 그룹 가입",
-  method: "post",
-  path: "/groups/{id}/join",
-  tags: [TAG],
-  middleware: [isAuthenticated] as const,
-  security: [
-    {
-      cookieAuth: [],
-    },
-  ],
-  request: {
-    params: GroupParamsSchema,
-    body: {
-      content: {
-        "application/json": {
-          schema: GroupJoinJsonSchema,
-        },
-      },
-    },
-  },
-  responses: {
-    [status.OK]: {
-      description: "Join group with invite link",
-      content: resourceContent(GroupInviteLinkSchema),
-    },
-    [status.BAD_REQUEST]: {
-      description: "Invalid invite code",
-      content: errorContent(),
-    },
-    [status.NOT_FOUND]: {
-      description: "Group not found",
-      content: errorContent(),
-    },
-    [status.CONFLICT]: {
-      description: "Already a member of this group",
       content: errorContent(),
     },
   },
