@@ -36,6 +36,11 @@ export const acceptInvite = createRoute({
   path: "/invites/{code}/join",
   tags: [TAG],
   middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
   request: {
     params: InviteParamsSchema,
   },
