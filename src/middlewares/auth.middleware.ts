@@ -10,12 +10,9 @@ export const isAuthenticated = createMiddleware<Context>(async (c, next) => {
   if (!user) {
     return c.json(
       {
-        errors: [
-          {
-            message: "Unauthorized",
-            code: "UNAUTHORIZED",
-          },
-        ],
+        status: "error",
+        code: 401,
+        message: "Unauthorized",
       },
       401,
     );
