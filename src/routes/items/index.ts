@@ -187,6 +187,7 @@ app.openapi(routes.reserveItem, async (c) => {
       startTime: startDate,
       endTime: endDate,
       quantity: quantity,
+      groupId: groupId,
     })
     .returning();
 
@@ -203,8 +204,6 @@ app.openapi(routes.reserveItem, async (c) => {
       startTime: reservation.startTime,
       endTime: reservation.endTime,
       reservationTime: reservation.reservationTime,
-      pickupTime: reservation.pickupTime,
-      returnTime: reservation.returnTime,
       createdAt: reservation.createdAt,
       updatedAt: reservation.updatedAt,
       groupId: groupId,
