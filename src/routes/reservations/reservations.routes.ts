@@ -54,3 +54,33 @@ export const detail = createRoute({
     },
   },
 });
+
+export const cancel = createRoute({
+  summary: "예약 취소",
+  method: "post",
+  path: "/reservations/{id}/cancel",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: ReservationParamsSchema,
+  },
+  responses: {
+    [status.OK]: {
+      description: "예약 상세",
+      content: resourceContent(ReservationSchema),
+    },
+    [status.BAD_REQUEST]: {
+      description: "예약 취소를 위한 잘못된 요청입니다.",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "예약을 찾을 수 없습니다.",
+      content: errorContent(),
+    },
+  },
+});
