@@ -400,3 +400,28 @@ export const listItems = createRoute({
     },
   },
 });
+
+export const leftGroup = createRoute({
+  summary: "그룹 탈퇴",
+  method: "delete",
+  path: "/groups/{id}/members/me",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.NO_CONTENT]: {
+      description: "Leave group",
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a member of this group",
+      content: errorContent(),
+    },
+  },
+});

@@ -1,5 +1,6 @@
 import { GROUP_ROLE } from "@/lib/group-role";
 import { slugId } from "@/lib/nanoid";
+import { RESERVATION_STATUS } from "@/routes/reservations/reservations.constants";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { and, eq, inArray } from "drizzle-orm";
 import db from "../../database";
@@ -10,6 +11,7 @@ import {
   groups,
   itemImages,
   items,
+  reservations,
 } from "../../database/schema";
 import * as routes from "./groups.routes";
 const app = new OpenAPIHono();
@@ -867,6 +869,56 @@ app.openapi(routes.listItems, async (c) => {
       },
     })),
   });
+});
+
+app.openapi(routes.leftGroup, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "Group not found",
+      },
+      403,
+    );
+  }
+
+  // 남아있는 예약이 있는지 확인
+
+  const hasReservations = await db.query.reservations.findFirst({
+    where: and(
+      eq(reservations.userId, user.id),
+      inArray(reservations.status, [
+        RESERVATION_STATUS.PENDING,
+        RESERVATION_STATUS.IN_USE,
+      ]),
+      eq(reservations.groupId, id),
+    ),
+  });
+
+  if (hasReservations) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You have active reservations in this group",
+      },
+      403,
+    );
+  }
+
+  await db
+    .delete(groupMembers)
+    .where(and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)));
+
+  return c.newResponse(null, 204);
 });
 
 export default app;
