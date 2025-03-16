@@ -22,6 +22,13 @@
       "when": 1742018392290,
       "tag": "0002_modern_black_crow",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1742150006186,
+      "tag": "0003_shiny_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

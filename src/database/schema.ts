@@ -114,6 +114,7 @@ export const groupsRelations = relations(groups, ({ many, one }) => ({
     fields: [groups.createdBy],
     references: [users.id],
   }),
+  reservations: many(reservations),
 }));
 
 /**
@@ -291,6 +292,9 @@ export const reservations = pgTable("reservations", {
   itemId: integer("item_id")
     .notNull()
     .references(() => items.id),
+  groupId: text("group_id")
+    .notNull()
+    .references(() => groups.id),
   status: text("status").notNull().default(RESERVATION_STATUS.PENDING),
   quantity: integer("quantity").notNull(),
   reservationTime: timestamp("reservation_time", {
@@ -320,6 +324,10 @@ export const reservationsRelations = relations(
       references: [items.id],
     }),
     reservationImages: many(reservationImages),
+    group: one(groups, {
+      fields: [reservations.groupId],
+      references: [groups.id],
+    }),
   }),
 );
 
