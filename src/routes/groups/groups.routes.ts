@@ -68,7 +68,7 @@ export const list = createRoute({
 });
 
 export const update = createRoute({
-  summary: "그룹 정보 수정",
+  summary: "그룹 정보 수정(관리자만 가능)",
   method: "patch",
   path: "/groups/{id}",
   tags: [TAG],
@@ -106,7 +106,7 @@ export const update = createRoute({
 });
 
 export const detail = createRoute({
-  summary: "그룹 상세 조회",
+  summary: "그룹 상세 조회(그룹원만 가능)",
   method: "get",
   path: "/groups/{id}",
   tags: [TAG],
@@ -136,7 +136,7 @@ export const detail = createRoute({
 });
 
 export const remove = createRoute({
-  summary: "그룹 삭제",
+  summary: "그룹 삭제(관리자만 가능)",
   method: "delete",
   path: "/groups/{id}",
   tags: [TAG],
@@ -169,7 +169,7 @@ export const remove = createRoute({
 });
 
 export const listMembers = createRoute({
-  summary: "그룹 멤버 목록 조회",
+  summary: "그룹 멤버 목록 조회(그룹원만 가능)",
   method: "get",
   path: "/groups/{id}/members",
   tags: [TAG],
@@ -195,7 +195,7 @@ export const listMembers = createRoute({
 });
 
 export const deleteMembers = createRoute({
-  summary: "그룹 멤버 일괄 삭제",
+  summary: "그룹 멤버 일괄 삭제(관리자만 가능)",
   method: "delete",
   path: "/groups/{id}/members",
   tags: [TAG],
@@ -236,7 +236,7 @@ export const deleteMembers = createRoute({
 });
 
 export const createInviteLink = createRoute({
-  summary: "그룹 초대 링크 생성",
+  summary: "그룹 초대 링크 생성(관리자만 가능)",
   method: "post",
   path: "/groups/{id}/invites",
   tags: [TAG],
@@ -270,7 +270,7 @@ export const createInviteLink = createRoute({
 });
 
 export const listInvites = createRoute({
-  summary: "그룹 초대 링크 목록 조회",
+  summary: "그룹 초대 링크 목록 조회(관리자만 가능)",
   method: "get",
   path: "/groups/{id}/invites",
   tags: [TAG],
@@ -300,7 +300,7 @@ export const listInvites = createRoute({
 });
 
 export const createItem = createRoute({
-  summary: "그룹 아이템 생성",
+  summary: "그룹 아이템 생성(관리자만 가능)",
   method: "post",
   path: "/groups/{id}/items",
   tags: [TAG],
@@ -338,7 +338,7 @@ export const createItem = createRoute({
 });
 
 export const updateItem = createRoute({
-  summary: "그룹 아이템 수정",
+  summary: "그룹 아이템 수정(관리자만 가능)",
   method: "patch",
   path: "/groups/{id}/items/{itemId}",
   tags: [TAG],
@@ -376,7 +376,7 @@ export const updateItem = createRoute({
 });
 
 export const listItems = createRoute({
-  summary: "그룹 아이템 목록",
+  summary: "그룹 아이템 목록(그룹원만 가능)",
   method: "get",
   path: "/groups/{id}/items",
   tags: [TAG],
@@ -402,7 +402,7 @@ export const listItems = createRoute({
 });
 
 export const leftGroup = createRoute({
-  summary: "그룹 탈퇴",
+  summary: "그룹 탈퇴(그룹원만 가능)",
   method: "delete",
   path: "/groups/{id}/members/me",
   tags: [TAG],
