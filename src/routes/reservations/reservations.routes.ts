@@ -2,9 +2,9 @@ import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   ReservationCreateJsonSchema,
-  ReservationListSchema,
   ReservationParamsSchema,
-  ReservationSchema,
+  ReservationWithItemListSchema,
+  ReservationWithItemSchema,
 } from "@/routes/reservations/reservations.schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
@@ -25,7 +25,7 @@ export const list = createRoute({
   responses: {
     [status.OK]: {
       description: "예약 목록",
-      content: resourceContent(ReservationListSchema),
+      content: resourceContent(ReservationWithItemListSchema),
     },
   },
 });
@@ -47,7 +47,7 @@ export const detail = createRoute({
   responses: {
     [status.OK]: {
       description: "예약 상세",
-      content: resourceContent(ReservationSchema),
+      content: resourceContent(ReservationWithItemSchema),
     },
     [status.NOT_FOUND]: {
       description: "예약을 찾을 수 없습니다.",
@@ -73,7 +73,7 @@ export const cancel = createRoute({
   responses: {
     [status.OK]: {
       description: "예약 상세",
-      content: resourceContent(ReservationSchema),
+      content: resourceContent(ReservationWithItemSchema),
     },
     [status.BAD_REQUEST]: {
       description: "예약 취소를 위한 잘못된 요청입니다.",
@@ -109,7 +109,7 @@ export const reserveItem = createRoute({
   responses: {
     [status.OK]: {
       description: "예약 생성",
-      content: resourceContent(ReservationSchema),
+      content: resourceContent(ReservationWithItemSchema),
     },
     [status.NOT_FOUND]: {
       description: "물품을 찾을 수 없습니다.",

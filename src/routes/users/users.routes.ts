@@ -1,7 +1,7 @@
 import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
-  UpdateProfileJsonSchema,
+  ProfileUpdateJsonSchema,
   UserSchema,
 } from "@/routes/users/users.schema";
 import { ErrorResponseSchema } from "@/shared/schema";
@@ -55,7 +55,7 @@ export const updateProfile = createRoute({
       description: "수정할 사용자 정보",
       content: {
         "application/json": {
-          schema: UpdateProfileJsonSchema,
+          schema: ProfileUpdateJsonSchema,
         },
       },
     },

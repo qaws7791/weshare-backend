@@ -1,29 +1,28 @@
-import z from "zod";
+import { z } from "@hono/zod-openapi";
 
-export const KakaoLoginUrlSchema = z.object({
-  url: z.string().url(),
-});
+export const KakaoLoginUrlSchema = z
+  .object({
+    url: z.string().url(),
+  })
+  .openapi("KakaoLoginUrlSchema");
 
-export const KakaoLoginCallbackJsonSchema = z.object({
-  code: z.string(),
-});
+export const KakaoLoginCallbackJsonSchema = z
+  .object({
+    code: z.string(),
+  })
+  .openapi("KakaoLoginCallbackJsonSchema");
 
-export const EmailRegisterJsonSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  username: z.string().min(2).max(50),
-});
+export const EmailRegisterJsonSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+    username: z.string().min(2).max(50),
+  })
+  .openapi("EmailRegisterJsonSchema");
 
-export const UserSchema = z.object({
-  id: z.string(),
-  username: z.string(),
-  provider: z.string().nullable(),
-  email: z.string().nullable(),
-  providerId: z.string().nullable(),
-  profileImage: z.string().nullable(),
-});
-
-export const EmailLoginJsonSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-});
+export const EmailLoginJsonSchema = z
+  .object({
+    email: z.string().email(),
+    password: z.string().min(8),
+  })
+  .openapi("EmailLoginJsonSchema");

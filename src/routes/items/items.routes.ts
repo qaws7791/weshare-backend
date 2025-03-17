@@ -1,12 +1,12 @@
 import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
-  availableTimeSlotSchema,
-  ItemDetailSchema,
-  ItemJsonSchema,
+  AvailableTimeSlotSchema,
   ItemListSchema,
   ItemParamsSchema,
-  ReservationsWithUserSchema,
+  ItemUpdateJsonSchema,
+  ItemWithGroupSchema,
+  ReservationWithUserListSchema,
 } from "@/routes/items/items.schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
@@ -33,7 +33,7 @@ export const list = createRoute({
 });
 
 export const availableTimes = createRoute({
-  summary: "예약 가능한 시간대",
+  summary: "예약 가능한 시간대(그룹원만 가능)",
   method: "get",
   path: "/items/{id}/available-times",
   tags: [TAG],
@@ -49,7 +49,7 @@ export const availableTimes = createRoute({
   responses: {
     [status.OK]: {
       description: "예약 가능한 시간대",
-      content: resourceContent(availableTimeSlotSchema),
+      content: resourceContent(AvailableTimeSlotSchema),
     },
     [status.NOT_FOUND]: {
       description: "물품을 찾을 수 없습니다.",
@@ -58,7 +58,7 @@ export const availableTimes = createRoute({
 });
 
 export const itemReservations = createRoute({
-  summary: "물품 예약 내역",
+  summary: "물품 예약 내역(그룹원만 가능)",
   method: "get",
   path: "/items/{id}/reservations",
   tags: [TAG],
@@ -74,7 +74,7 @@ export const itemReservations = createRoute({
   responses: {
     [status.OK]: {
       description: "물품 예약 내역",
-      content: resourceContent(ReservationsWithUserSchema),
+      content: resourceContent(ReservationWithUserListSchema),
     },
     [status.NOT_FOUND]: {
       description: "물품을 찾을 수 없습니다.",
@@ -83,7 +83,7 @@ export const itemReservations = createRoute({
 });
 
 export const itemDetail = createRoute({
-  summary: "물품 상세",
+  summary: "물품 상세(그룹원만 가능)",
   method: "get",
   path: "/items/{id}",
   tags: [TAG],
@@ -99,7 +99,7 @@ export const itemDetail = createRoute({
   responses: {
     [status.OK]: {
       description: "물품 상세",
-      content: resourceContent(ItemDetailSchema),
+      content: resourceContent(ItemWithGroupSchema),
     },
     [status.NOT_FOUND]: {
       description: "물품을 찾을 수 없습니다.",
@@ -123,7 +123,7 @@ export const update = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: ItemJsonSchema,
+          schema: ItemUpdateJsonSchema,
         },
       },
       description: "Group item to update",
@@ -132,7 +132,7 @@ export const update = createRoute({
   responses: {
     [status.OK]: {
       description: "Update group item",
-      content: resourceContent(ItemDetailSchema),
+      content: resourceContent(ItemWithGroupSchema),
     },
     [status.BAD_REQUEST]: {
       description: "Invalid group item data",

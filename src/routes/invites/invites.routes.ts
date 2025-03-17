@@ -1,9 +1,9 @@
 import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
+import { GroupSchema } from "@/routes/groups/groups.schema";
 import {
-  InviteDetailSchema,
-  InviteJoinResponseSchema,
   InviteParamsSchema,
+  InviteWithGroupSchema,
 } from "@/routes/invites/invites.schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
@@ -21,7 +21,7 @@ export const detail = createRoute({
   responses: {
     [status.OK]: {
       description: "초대장 상세 정보",
-      content: resourceContent(InviteDetailSchema),
+      content: resourceContent(InviteWithGroupSchema),
     },
     [status.BAD_REQUEST]: {
       description: "초대 링크가 만료되었거나 비활성 상태입니다",
@@ -47,7 +47,7 @@ export const acceptInvite = createRoute({
   responses: {
     [status.OK]: {
       description: "그룹 가입 성공",
-      content: resourceContent(InviteJoinResponseSchema),
+      content: resourceContent(GroupSchema),
     },
     [status.BAD_REQUEST]: {
       description: "초대 링크가 만료되었거나 비활성 상태입니다",

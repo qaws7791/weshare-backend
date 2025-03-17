@@ -2,16 +2,16 @@ import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
   GroupCreateJsonSchema,
-  GroupDetailSchema,
-  GroupInviteListSchema,
-  GroupInviteSchema,
-  GroupItemJsonSchema,
+  GroupItemCreateJsonSchema,
   GroupItemListSchema,
   GroupItemSchema,
   GroupListSchema,
-  GroupMemberListSchema,
-  GroupMembersDeleteSchema,
+  GroupMembersDeleteJsonSchema,
   GroupParamsSchema,
+  GroupSchema,
+  InviteListSchema,
+  InviteSchema,
+  MemberListSchema,
 } from "@/routes/groups/groups.schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
@@ -42,7 +42,7 @@ export const create = createRoute({
   responses: {
     [status.CREATED]: {
       description: "Create group",
-      content: resourceContent(GroupDetailSchema),
+      content: resourceContent(GroupSchema),
     },
   },
 });
@@ -91,7 +91,7 @@ export const update = createRoute({
   responses: {
     [status.OK]: {
       description: "Update group",
-      content: resourceContent(GroupDetailSchema),
+      content: resourceContent(GroupSchema),
     },
     [status.FORBIDDEN]: {
       description: "You are not a admin of this group",
@@ -121,7 +121,7 @@ export const detail = createRoute({
   responses: {
     [status.OK]: {
       description: "Group detail",
-      content: resourceContent(GroupDetailSchema),
+      content: resourceContent(GroupSchema),
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
@@ -180,7 +180,7 @@ export const listMembers = createRoute({
   responses: {
     [status.OK]: {
       description: "List group members",
-      content: resourceContent(GroupMemberListSchema),
+      content: resourceContent(MemberListSchema),
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
@@ -205,7 +205,7 @@ export const deleteMembers = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: GroupMembersDeleteSchema,
+          schema: GroupMembersDeleteJsonSchema,
         },
       },
       description: "Group members to delete",
@@ -230,40 +230,6 @@ export const deleteMembers = createRoute({
   },
 });
 
-export const createInviteLink = createRoute({
-  summary: "그룹 초대 링크 생성(관리자만 가능)",
-  method: "post",
-  path: "/groups/{id}/invites",
-  tags: [TAG],
-  middleware: [isAuthenticated] as const,
-  security: [
-    {
-      cookieAuth: [],
-    },
-  ],
-  request: {
-    params: GroupParamsSchema,
-  },
-  responses: {
-    [status.OK]: {
-      description: "Create invite link",
-      content: resourceContent(GroupInviteSchema),
-    },
-    [status.FORBIDDEN]: {
-      description: "You are not a admin of this group",
-      content: errorContent(),
-    },
-    [status.NOT_FOUND]: {
-      description: "Group not found",
-      content: errorContent(),
-    },
-    [status.CONFLICT]: {
-      description: "Invite link already exists",
-      content: errorContent(),
-    },
-  },
-});
-
 export const listInvites = createRoute({
   summary: "그룹 초대 링크 목록 조회(관리자만 가능)",
   method: "get",
@@ -281,7 +247,70 @@ export const listInvites = createRoute({
   responses: {
     [status.OK]: {
       description: "List group invites",
-      content: resourceContent(GroupInviteListSchema),
+      content: resourceContent(InviteListSchema),
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a admin of this group",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
+      content: errorContent(),
+    },
+  },
+});
+
+export const createInviteLink = createRoute({
+  summary: "그룹 초대 링크 생성(관리자만 가능)",
+  method: "post",
+  path: "/groups/{id}/invites",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.OK]: {
+      description: "Create invite link",
+      content: resourceContent(InviteSchema),
+    },
+    [status.FORBIDDEN]: {
+      description: "You are not a admin of this group",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
+      content: errorContent(),
+    },
+    [status.CONFLICT]: {
+      description: "Invite link already exists",
+      content: errorContent(),
+    },
+  },
+});
+
+export const leftGroup = createRoute({
+  summary: "그룹 탈퇴(그룹원만 가능)",
+  method: "delete",
+  path: "/groups/{id}/members/me",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    params: GroupParamsSchema,
+  },
+  responses: {
+    [status.NO_CONTENT]: {
+      description: "Leave group",
     },
     [status.FORBIDDEN]: {
       description: "You are not a admin of this group",
@@ -310,7 +339,7 @@ export const createItem = createRoute({
     body: {
       content: {
         "application/json": {
-          schema: GroupItemJsonSchema,
+          schema: GroupItemCreateJsonSchema,
         },
       },
       description: "Group item to create",
@@ -357,35 +386,6 @@ export const listItems = createRoute({
     },
     [status.FORBIDDEN]: {
       description: "You are not a member or admin of this group",
-      content: errorContent(),
-    },
-    [status.NOT_FOUND]: {
-      description: "Group not found",
-      content: errorContent(),
-    },
-  },
-});
-
-export const leftGroup = createRoute({
-  summary: "그룹 탈퇴(그룹원만 가능)",
-  method: "delete",
-  path: "/groups/{id}/members/me",
-  tags: [TAG],
-  middleware: [isAuthenticated] as const,
-  security: [
-    {
-      cookieAuth: [],
-    },
-  ],
-  request: {
-    params: GroupParamsSchema,
-  },
-  responses: {
-    [status.NO_CONTENT]: {
-      description: "Leave group",
-    },
-    [status.FORBIDDEN]: {
-      description: "You are not a admin of this group",
       content: errorContent(),
     },
     [status.NOT_FOUND]: {

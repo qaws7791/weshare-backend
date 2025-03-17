@@ -273,6 +273,56 @@ app.openapi(routes.remove, async (c) => {
   }
 });
 
+app.openapi(routes.listInvites, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 404,
+        message: "Group not found",
+      },
+      404,
+    );
+  }
+
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to list invite links",
+      },
+      403,
+    );
+  }
+
+  const result = await db.query.groupInvites.findMany({
+    where: eq(groupInvites.groupId, id),
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Invite links fetched successfully",
+    data: result.map((invite) => ({
+      id: invite.id.toString(),
+      code: invite.code,
+      groupId: invite.groupId.toString(),
+      isExpired: invite.isExpired,
+      createdAt: invite.createdAt.toISOString(),
+      updatedAt: invite.updatedAt.toISOString(),
+    })),
+  });
+});
+
 app.openapi(routes.createInviteLink, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
@@ -342,12 +392,30 @@ app.openapi(routes.createInviteLink, async (c) => {
   });
 });
 
-app.openapi(routes.listInvites, async (c) => {
+app.openapi(routes.listItems, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
 
   const groupMember = await db.query.groupMembers.findFirst({
     where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+    with: {
+      group: {
+        columns: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        with: {
+          groupImages: {
+            columns: {
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   if (!groupMember) {
@@ -361,33 +429,58 @@ app.openapi(routes.listInvites, async (c) => {
     );
   }
 
-  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
-  if (!isGroupAdmin) {
-    return c.json(
-      {
-        status: "fail",
-        code: 403,
-        message: "You are not authorized to list invite links",
+  const result = await db.query.items.findMany({
+    where: eq(items.groupId, id),
+    with: {
+      itemImages: {
+        columns: {
+          imageUrl: true,
+        },
       },
-      403,
-    );
-  }
-
-  const result = await db.query.groupInvites.findMany({
-    where: eq(groupInvites.groupId, id),
+      group: {
+        columns: {
+          id: true,
+          name: true,
+          description: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        with: {
+          groupImages: {
+            columns: {
+              imageUrl: true,
+            },
+          },
+        },
+      },
+    },
   });
 
   return c.json({
     status: "success",
     code: 200,
-    message: "Invite links fetched successfully",
-    data: result.map((invite) => ({
-      id: invite.id.toString(),
-      code: invite.code,
-      groupId: invite.groupId.toString(),
-      isExpired: invite.isExpired,
-      createdAt: invite.createdAt.toISOString(),
-      updatedAt: invite.updatedAt.toISOString(),
+    message: "Group items fetched successfully",
+    data: result.map((item) => ({
+      id: item.id.toString(),
+      name: item.name,
+      description: item.description,
+      caution: item.caution,
+      pickupLocation: item.pickupLocation,
+      returnLocation: item.returnLocation,
+      quantity: item.quantity,
+      images: item.itemImages.map((image) => image.imageUrl),
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+      groupId: item.groupId.toString(),
+      group: {
+        id: groupMember.group.id.toString(),
+        name: groupMember.group.name,
+        description: groupMember.group.description,
+        image: groupMember.group.groupImages[0]?.imageUrl,
+        createdBy: groupMember.userId.toString(),
+        createdAt: groupMember.group.createdAt.toISOString(),
+        updatedAt: groupMember.group.updatedAt.toISOString(),
+      },
     })),
   });
 });
@@ -503,99 +596,6 @@ app.openapi(routes.createItem, async (c) => {
         updatedAt: groupMember.group.updatedAt.toISOString(),
       },
     },
-  });
-});
-
-app.openapi(routes.listItems, async (c) => {
-  const user = c.get("user")!;
-  const { id } = c.req.valid("param");
-
-  const groupMember = await db.query.groupMembers.findFirst({
-    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
-    with: {
-      group: {
-        columns: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        with: {
-          groupImages: {
-            columns: {
-              imageUrl: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!groupMember) {
-    return c.json(
-      {
-        status: "fail",
-        code: 404,
-        message: "Group not found",
-      },
-      404,
-    );
-  }
-
-  const result = await db.query.items.findMany({
-    where: eq(items.groupId, id),
-    with: {
-      itemImages: {
-        columns: {
-          imageUrl: true,
-        },
-      },
-      group: {
-        columns: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        with: {
-          groupImages: {
-            columns: {
-              imageUrl: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  return c.json({
-    status: "success",
-    code: 200,
-    message: "Group items fetched successfully",
-    data: result.map((item) => ({
-      id: item.id.toString(),
-      name: item.name,
-      description: item.description,
-      caution: item.caution,
-      pickupLocation: item.pickupLocation,
-      returnLocation: item.returnLocation,
-      quantity: item.quantity,
-      images: item.itemImages.map((image) => image.imageUrl),
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-      groupId: item.groupId.toString(),
-      group: {
-        id: groupMember.group.id.toString(),
-        name: groupMember.group.name,
-        description: groupMember.group.description,
-        image: groupMember.group.groupImages[0]?.imageUrl,
-        createdBy: groupMember.userId.toString(),
-        createdAt: groupMember.group.createdAt.toISOString(),
-        updatedAt: groupMember.group.updatedAt.toISOString(),
-      },
-    })),
   });
 });
 

@@ -63,6 +63,13 @@ app.openapi(routes.acceptInvite, async (c) => {
 
   const inviteData = await db.query.groupInvites.findFirst({
     where: and(eq(groupInvites.code, code), eq(groupInvites.isExpired, false)),
+    with: {
+      group: {
+        with: {
+          groupImages: true,
+        },
+      },
+    },
   });
 
   if (!inviteData) {
@@ -96,26 +103,24 @@ app.openapi(routes.acceptInvite, async (c) => {
     );
   }
 
-  const [groupMember] = await db
-    .insert(groupMembers)
-    .values({
-      groupId: inviteData.groupId,
-      userId: user.id,
-      role: GROUP_ROLE.MEMBER,
-    })
-    .returning();
+  await db.insert(groupMembers).values({
+    groupId: inviteData.groupId,
+    userId: user.id,
+    role: GROUP_ROLE.MEMBER,
+  });
 
   return c.json({
     status: "success",
     code: 200,
     message: "Joined group successfully",
     data: {
-      groupId: groupMember.groupId.toString(),
-      userId: groupMember.userId.toString(),
-      role: groupMember.role,
-      joinedAt: groupMember.createdAt.toISOString(),
-      createdAt: groupMember.createdAt.toISOString(),
-      updatedAt: groupMember.updatedAt.toISOString(),
+      id: inviteData.group.id.toString(),
+      name: inviteData.group.name,
+      description: inviteData.group.description,
+      image: inviteData.group.groupImages[0]?.imageUrl,
+      createdBy: inviteData.group.createdBy.toString(),
+      createdAt: inviteData.group.createdAt.toISOString(),
+      updatedAt: inviteData.group.updatedAt.toISOString(),
     },
   });
 });

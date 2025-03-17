@@ -179,38 +179,44 @@ app.openapi(routes.update, async (c) => {
       .where(eq(items.id, parseInt(id)))
       .returning();
 
-    const existingImages = await tx.query.itemImages.findMany({
-      where: eq(itemImages.itemId, item.id),
-    });
+    if (images && images.length > 0) {
+      const existingImages = await tx.query.itemImages.findMany({
+        where: eq(itemImages.itemId, item.id),
+      });
 
-    const existingImageUrls = existingImages.map((image) => image.imageUrl);
-    const newImageUrls = images.filter(
-      (image) => !existingImageUrls.includes(image),
-    );
-
-    const deletedImageUrls = existingImageUrls.filter(
-      (image) => !images.includes(image),
-    );
-
-    // 삭제된 이미지를 삭제
-    await tx
-      .delete(itemImages)
-      .where(
-        and(
-          eq(itemImages.itemId, item.id),
-          inArray(itemImages.imageUrl, deletedImageUrls),
-        ),
+      const existingImageUrls = existingImages.map((image) => image.imageUrl);
+      const newImageUrls = images.filter(
+        (image) => !existingImageUrls.includes(image),
       );
 
-    // 추가된 이미지를 추가
-    const newItemImages = newImageUrls.map((image) => ({
-      itemId: item.id,
-      imageUrl: image,
-      groupId: id,
-    }));
-    await tx.insert(itemImages).values(newItemImages);
+      const deletedImageUrls = existingImageUrls.filter(
+        (image) => !images.includes(image),
+      );
 
-    return item;
+      // 삭제된 이미지를 삭제
+      await tx
+        .delete(itemImages)
+        .where(
+          and(
+            eq(itemImages.itemId, item.id),
+            inArray(itemImages.imageUrl, deletedImageUrls),
+          ),
+        );
+
+      // 추가된 이미지를 추가
+      const newItemImages = newImageUrls.map((image) => ({
+        itemId: item.id,
+        imageUrl: image,
+        groupId: id,
+      }));
+
+      await tx.insert(itemImages).values(newItemImages);
+    }
+
+    return {
+      ...item,
+      images: images || [],
+    };
   });
 
   return c.json({
@@ -225,7 +231,7 @@ app.openapi(routes.update, async (c) => {
       pickupLocation: updatedItem.pickupLocation,
       returnLocation: updatedItem.returnLocation,
       quantity: updatedItem.quantity,
-      images,
+      images: updatedItem.images,
       createdAt: updatedItem.createdAt.toISOString(),
       updatedAt: updatedItem.updatedAt.toISOString(),
       groupId: updatedItem.groupId.toString(),

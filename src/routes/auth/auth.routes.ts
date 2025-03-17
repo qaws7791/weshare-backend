@@ -3,8 +3,8 @@ import {
   EmailLoginJsonSchema,
   EmailRegisterJsonSchema,
   KakaoLoginUrlSchema,
-  UserSchema,
 } from "@/routes/auth/auth.schema";
+import { UserSchema } from "@/routes/users/users.schema";
 import { createRoute, z } from "@hono/zod-openapi";
 import status from "http-status";
 

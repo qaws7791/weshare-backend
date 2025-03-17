@@ -48,13 +48,13 @@ app.use(async (_c, next) => {
 });
 
 app.basePath("/api");
-app.route("/", images);
 app.route("/", auth);
-app.route("/", users);
 app.route("/", groups);
+app.route("/", invites);
 app.route("/", items);
 app.route("/", reservations);
-app.route("/", invites);
+app.route("/", images);
+app.route("/", users);
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
