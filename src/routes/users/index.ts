@@ -16,10 +16,10 @@ app.openapi(routes.profile, async (c) => {
     return c.json(
       {
         status: "error",
-        code: 404,
-        message: "User not found",
+        code: 500,
+        message: "Internal server error",
       },
-      404,
+      500,
     );
   }
 
@@ -50,10 +50,10 @@ app.openapi(routes.updateProfile, async (c) => {
     return c.json(
       {
         status: "error",
-        code: 404,
-        message: "User not found",
+        code: 500,
+        message: "Internal server error",
       },
-      404,
+      500,
     );
   }
 

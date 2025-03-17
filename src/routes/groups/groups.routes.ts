@@ -41,7 +41,7 @@ export const create = createRoute({
     },
   },
   responses: {
-    [status.OK]: {
+    [status.CREATED]: {
       description: "Create group",
       content: resourceContent(GroupDetailSchema),
     },
@@ -95,7 +95,7 @@ export const update = createRoute({
       content: resourceContent(GroupDetailSchema),
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+      description: "You are not a admin of this group",
       content: errorContent(),
     },
     [status.NOT_FOUND]: {
@@ -124,10 +124,6 @@ export const detail = createRoute({
       description: "Group detail",
       content: resourceContent(GroupDetailSchema),
     },
-    [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
-      content: errorContent(),
-    },
     [status.NOT_FOUND]: {
       description: "Group not found",
       content: errorContent(),
@@ -154,7 +150,7 @@ export const remove = createRoute({
       description: "Delete group",
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+      description: "You are not a  a admin of this group",
       content: errorContent(),
     },
     [status.NOT_FOUND]: {
@@ -187,8 +183,8 @@ export const listMembers = createRoute({
       description: "List group members",
       content: resourceContent(GroupMemberListSchema),
     },
-    [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+    [status.NOT_FOUND]: {
+      description: "Group not found",
       content: errorContent(),
     },
   },
@@ -221,7 +217,7 @@ export const deleteMembers = createRoute({
       description: "Delete group members",
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+      description: "You are not a admin of this group",
       content: errorContent(),
     },
     [status.NOT_FOUND]: {
@@ -255,7 +251,7 @@ export const createInviteLink = createRoute({
       content: resourceContent(GroupInviteSchema),
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+      description: "You are not a admin of this group",
       content: errorContent(),
     },
     [status.NOT_FOUND]: {
@@ -289,7 +285,7 @@ export const listInvites = createRoute({
       content: resourceContent(GroupInviteListSchema),
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+      description: "You are not a admin of this group",
       content: errorContent(),
     },
     [status.NOT_FOUND]: {
@@ -331,7 +327,11 @@ export const createItem = createRoute({
       content: errorContent(),
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member or admin of this group",
+      description: "You are not a admin of this group",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
       content: errorContent(),
     },
   },
@@ -372,6 +372,10 @@ export const updateItem = createRoute({
       description: "You are not a member or admin of this group",
       content: errorContent(),
     },
+    [status.NOT_FOUND]: {
+      description: "Group or group item not found",
+      content: errorContent(),
+    },
   },
 });
 
@@ -398,6 +402,10 @@ export const listItems = createRoute({
       description: "You are not a member or admin of this group",
       content: errorContent(),
     },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
+      content: errorContent(),
+    },
   },
 });
 
@@ -420,7 +428,11 @@ export const leftGroup = createRoute({
       description: "Leave group",
     },
     [status.FORBIDDEN]: {
-      description: "You are not a member of this group",
+      description: "You are not a admin of this group",
+      content: errorContent(),
+    },
+    [status.NOT_FOUND]: {
+      description: "Group not found",
       content: errorContent(),
     },
   },

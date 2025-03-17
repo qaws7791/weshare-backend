@@ -93,7 +93,7 @@ app.openapi(routes.create, async (c) => {
 
   return c.json({
     status: "success",
-    code: 200,
+    code: 201,
     message: "Group created successfully",
     data: {
       id: groupData.id,
@@ -125,7 +125,7 @@ app.openapi(routes.detail, async (c) => {
     },
   });
 
-  if (!result) {
+  if (!result || result.groupMembers.length === 0) {
     return c.json(
       {
         status: "fail",
@@ -133,17 +133,6 @@ app.openapi(routes.detail, async (c) => {
         message: "Group not found",
       },
       404,
-    );
-  }
-
-  if (result.groupMembers.length === 0) {
-    return c.json(
-      {
-        status: "fail",
-        code: 403,
-        message: "You are not a member of this group",
-      },
-      403,
     );
   }
 
@@ -192,7 +181,7 @@ app.openapi(routes.update, async (c) => {
       {
         status: "fail",
         code: 403,
-        message: "You are not authorized to update this group",
+        message: "You are not a admin of this group",
       },
       403,
     );
@@ -260,7 +249,7 @@ app.openapi(routes.remove, async (c) => {
         {
           status: "fail",
           code: 403,
-          message: "You are not authorized to delete this group",
+          message: "You are not a  a admin of this group",
         },
         403,
       );
@@ -297,10 +286,10 @@ app.openapi(routes.listMembers, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -345,10 +334,10 @@ app.openapi(routes.deleteMembers, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -405,10 +394,10 @@ app.openapi(routes.createInviteLink, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -474,10 +463,10 @@ app.openapi(routes.listInvites, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -553,10 +542,10 @@ app.openapi(routes.createItem, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -667,10 +656,10 @@ app.openapi(routes.updateItem, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -808,10 +797,10 @@ app.openapi(routes.listItems, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 
@@ -883,10 +872,10 @@ app.openapi(routes.leftGroup, async (c) => {
     return c.json(
       {
         status: "fail",
-        code: 403,
+        code: 404,
         message: "Group not found",
       },
-      403,
+      404,
     );
   }
 

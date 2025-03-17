@@ -28,6 +28,16 @@ export const emailRegister = createRoute({
   responses: {
     [status.CREATED]: {
       description: "회원가입 성공",
+      headers: {
+        "Set-Cookie": {
+          description: "session cookie",
+          schema: {
+            type: "string",
+            example:
+              "s_id=757075c8e9e3d226; Path=/; Expires=Thu, 10 Apr 2025 14:20:19 GMT; HttpOnly; Secure; SameSite=Lax",
+          },
+        },
+      },
       content: resourceContent(UserSchema),
     },
     [status.BAD_REQUEST]: {

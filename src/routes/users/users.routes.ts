@@ -27,8 +27,8 @@ export const profile = createRoute({
       description: "사용자 정보",
       content: resourceContent(UserSchema),
     },
-    [status.NOT_FOUND]: {
-      description: "사용자를 찾을 수 없습니다.",
+    [status.INTERNAL_SERVER_ERROR]: {
+      description: "서버 오류",
       content: {
         "application/json": {
           schema: ErrorResponseSchema,
@@ -65,8 +65,8 @@ export const updateProfile = createRoute({
       description: "사용자 정보 수정 성공",
       content: resourceContent(UserSchema),
     },
-    [status.NOT_FOUND]: {
-      description: "사용자를 찾을 수 없습니다.",
+    [status.INTERNAL_SERVER_ERROR]: {
+      description: "서버 오류",
       content: errorContent(),
     },
   },
