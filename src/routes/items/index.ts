@@ -1,11 +1,17 @@
 import db from "@/database";
-import { groupMembers, items, reservations } from "@/database/schema";
+import {
+  groupMembers,
+  itemImages,
+  items,
+  reservations,
+} from "@/database/schema";
+import { GROUP_ROLE } from "@/lib/group-role";
 import {
   generateTimeSlots,
   getMaxReserveQuantity,
 } from "@/routes/items/items.service";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq, gte, lte, or } from "drizzle-orm";
+import { and, eq, gte, inArray, lte, or } from "drizzle-orm";
 import * as routes from "./items.routes";
 
 const app = new OpenAPIHono();
@@ -56,8 +62,7 @@ app.openapi(routes.list, async (c) => {
     data: itemsWithGroup,
   });
 });
-
-app.openapi(routes.detail, async (c) => {
+app.openapi(routes.itemDetail, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
 
@@ -105,16 +110,22 @@ app.openapi(routes.detail, async (c) => {
   });
 });
 
-app.openapi(routes.reserveItem, async (c) => {
-  // 물품 예약하기
-  // 1. 사용자가 속한 그룹의 물품인지 확인
-  // 2. 해당 개수, 해당 시간에 예약 가능한지 기존의 예약과 물품 정보들을 통해 확인
-  // 3. 예약하기
-  // 4. 예약 완료 후 예약 정보를 반환
+app.openapi(routes.update, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
-  const { startTime, endTime, quantity } = c.req.valid("json");
-  const itemData = await db.query.items.findFirst({
+  const json = c.req.valid("json");
+
+  const {
+    name,
+    description,
+    images,
+    pickupLocation,
+    returnLocation,
+    quantity,
+    caution,
+  } = json;
+
+  const item = await db.query.items.findFirst({
     where: eq(items.id, parseInt(id)),
     with: {
       group: {
@@ -122,91 +133,111 @@ app.openapi(routes.reserveItem, async (c) => {
           groupMembers: {
             where: eq(groupMembers.userId, user.id),
           },
+          groupImages: true,
         },
       },
     },
   });
 
-  if (!itemData || itemData.group.groupMembers.length === 0) {
-    return c.json({
-      status: "fail",
-      code: 404,
-      message: "Item not found",
-    });
+  const groupMember = item?.group.groupMembers[0];
+
+  if (!item || !groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 404,
+        message: "Group not found",
+      },
+      404,
+    );
   }
 
-  const group = itemData.group;
-
-  const groupId = group.id;
-  const itemId = itemData.id;
-  const itemQuantity = itemData.quantity;
-  const startDate = new Date(startTime);
-  const endDate = new Date(endTime);
-  if (quantity > itemQuantity) {
-    return c.json({
-      status: "fail",
-      code: 400,
-      message: "Not enough quantity",
-    });
+  const isGroupAdmin = groupMember.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to update group item",
+      },
+      403,
+    );
   }
 
-  if (startDate.getSeconds() !== 0 || endDate.getSeconds() !== 0) {
-    return c.json({
-      status: "fail",
-      code: 400,
-      message: "Invalid time",
-    });
-  }
-  // 시간대별로 예약된 최대 수량을 계산
+  // 아이템 정보를 업데이트하고, 아이템 이미지들에 대해서 삭제된 이미지 제거 및 추가된 이미지 추가
+  const updatedItem = await db.transaction(async (tx) => {
+    const [item] = await tx
+      .update(items)
+      .set({
+        name,
+        description,
+        caution: caution || "",
+        pickupLocation,
+        returnLocation,
+        quantity,
+      })
+      .where(eq(items.id, parseInt(id)))
+      .returning();
 
-  const reservationsData = await db.query.reservations.findMany({
-    where: and(
-      eq(reservations.itemId, itemId),
-      or(
-        lte(reservations.startTime, endDate),
-        gte(reservations.endTime, startDate),
-      ),
-    ),
+    const existingImages = await tx.query.itemImages.findMany({
+      where: eq(itemImages.itemId, item.id),
+    });
+
+    const existingImageUrls = existingImages.map((image) => image.imageUrl);
+    const newImageUrls = images.filter(
+      (image) => !existingImageUrls.includes(image),
+    );
+
+    const deletedImageUrls = existingImageUrls.filter(
+      (image) => !images.includes(image),
+    );
+
+    // 삭제된 이미지를 삭제
+    await tx
+      .delete(itemImages)
+      .where(
+        and(
+          eq(itemImages.itemId, item.id),
+          inArray(itemImages.imageUrl, deletedImageUrls),
+        ),
+      );
+
+    // 추가된 이미지를 추가
+    const newItemImages = newImageUrls.map((image) => ({
+      itemId: item.id,
+      imageUrl: image,
+      groupId: id,
+    }));
+    await tx.insert(itemImages).values(newItemImages);
+
+    return item;
   });
-
-  const maxReserveQuantity = getMaxReserveQuantity(reservationsData);
-  const availableQuantity = itemQuantity - maxReserveQuantity;
-  if (quantity > availableQuantity) {
-    return c.json({
-      status: "fail",
-      code: 400,
-      message: "Not enough quantity",
-    });
-  }
-
-  const [reservation] = await db
-    .insert(reservations)
-    .values({
-      userId: user.id,
-      itemId: itemId,
-      startTime: startDate,
-      endTime: endDate,
-      quantity: quantity,
-      groupId: groupId,
-    })
-    .returning();
 
   return c.json({
     status: "success",
     code: 200,
-    message: "Item reserved successfully",
+    message: "Group item updated successfully",
     data: {
-      id: reservation.id.toString(),
-      userId: reservation.userId.toString(),
-      itemId: reservation.itemId.toString(),
-      status: reservation.status,
-      quantity: reservation.quantity,
-      startTime: reservation.startTime,
-      endTime: reservation.endTime,
-      reservationTime: reservation.reservationTime,
-      createdAt: reservation.createdAt,
-      updatedAt: reservation.updatedAt,
-      groupId: groupId,
+      id: updatedItem.id.toString(),
+      name: updatedItem.name,
+      description: updatedItem.description,
+      caution: updatedItem.caution,
+      pickupLocation: updatedItem.pickupLocation,
+      returnLocation: updatedItem.returnLocation,
+      quantity: updatedItem.quantity,
+      images,
+      createdAt: updatedItem.createdAt.toISOString(),
+      updatedAt: updatedItem.updatedAt.toISOString(),
+      groupId: updatedItem.groupId.toString(),
+      group: {
+        id: item.group.id.toString(),
+        name: item.group.name,
+        description: item.group.description,
+        image: item.group.groupImages[0]?.imageUrl,
+        createdBy: groupMember.userId.toString(),
+        createdAt: item.group.createdAt.toISOString(),
+        updatedAt: item.group.updatedAt.toISOString(),
+      },
     },
   });
 });

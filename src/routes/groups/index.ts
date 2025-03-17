@@ -9,7 +9,6 @@ import {
   groupInvites,
   groupMembers,
   groups,
-  itemImages,
   items,
   reservations,
 } from "../../database/schema";
@@ -274,114 +273,6 @@ app.openapi(routes.remove, async (c) => {
   }
 });
 
-app.openapi(routes.listMembers, async (c) => {
-  const user = c.get("user")!;
-  const { id } = c.req.valid("param");
-
-  const groupMember = await db.query.groupMembers.findFirst({
-    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
-  });
-
-  if (!groupMember) {
-    return c.json(
-      {
-        status: "fail",
-        code: 404,
-        message: "Group not found",
-      },
-      404,
-    );
-  }
-
-  const result = await db.query.groupMembers.findMany({
-    with: {
-      user: {
-        columns: {
-          id: true,
-          username: true,
-          profileImage: true,
-        },
-      },
-    },
-    where: eq(groupMembers.groupId, id),
-  });
-
-  return c.json({
-    status: "success",
-    code: 200,
-    message: "Group members fetched successfully",
-    data: result.map(({ user, ...groupMember }) => ({
-      id: user.id.toString(),
-      username: user.username,
-      profileImage: user.profileImage,
-      role: groupMember.role,
-      joinedAt: groupMember.createdAt.toISOString(),
-    })),
-  });
-});
-
-app.openapi(routes.deleteMembers, async (c) => {
-  const user = c.get("user")!;
-  const { id } = c.req.valid("param");
-  const { ids } = c.req.valid("json");
-  const deleteIds = ids.map((id) => Number(id));
-
-  const groupMember = await db.query.groupMembers.findFirst({
-    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
-  });
-
-  if (!groupMember) {
-    return c.json(
-      {
-        status: "fail",
-        code: 404,
-        message: "Group not found",
-      },
-      404,
-    );
-  }
-
-  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
-  if (!isGroupAdmin) {
-    return c.json(
-      {
-        status: "fail",
-        code: 403,
-        message: "You are not authorized to delete this group",
-      },
-      403,
-    );
-  }
-
-  try {
-    await db.transaction(async (tx) => {
-      await tx
-        .delete(groupMembers)
-        .where(
-          and(
-            eq(groupMembers.groupId, id),
-            inArray(groupMembers.userId, deleteIds),
-          ),
-        );
-    });
-
-    return c.json({
-      status: "success",
-      code: 200,
-      message: "Group members deleted successfully",
-    });
-  } catch {
-    return c.json(
-      {
-        status: "fail",
-        code: 500,
-        message: "Internal server error",
-      },
-      500,
-    );
-  }
-});
-
 app.openapi(routes.createInviteLink, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
@@ -615,158 +506,6 @@ app.openapi(routes.createItem, async (c) => {
   });
 });
 
-app.openapi(routes.updateItem, async (c) => {
-  const user = c.get("user")!;
-  const { id, itemId } = c.req.valid("param");
-  const json = c.req.valid("json");
-
-  const {
-    name,
-    description,
-    images,
-    pickupLocation,
-    returnLocation,
-    quantity,
-    caution,
-  } = json;
-
-  const groupMember = await db.query.groupMembers.findFirst({
-    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
-    with: {
-      group: {
-        columns: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        with: {
-          groupImages: {
-            columns: {
-              imageUrl: true,
-            },
-          },
-        },
-      },
-    },
-  });
-
-  if (!groupMember) {
-    return c.json(
-      {
-        status: "fail",
-        code: 404,
-        message: "Group not found",
-      },
-      404,
-    );
-  }
-
-  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
-  if (!isGroupAdmin) {
-    return c.json(
-      {
-        status: "fail",
-        code: 403,
-        message: "You are not authorized to update group item",
-      },
-      403,
-    );
-  }
-
-  const groupItem = await db.query.items.findFirst({
-    where: and(eq(items.id, parseInt(itemId)), eq(items.groupId, id)),
-  });
-
-  if (!groupItem) {
-    return c.json(
-      {
-        status: "fail",
-        code: 400,
-        message: "Group item not found",
-      },
-      400,
-    );
-  }
-  // 아이템 정보를 업데이트하고, 아이템 이미지들에 대해서 삭제된 이미지 제거 및 추가된 이미지 추가
-  const updatedItem = await db.transaction(async (tx) => {
-    const [item] = await tx
-      .update(items)
-      .set({
-        name,
-        description,
-        caution: caution || "",
-        pickupLocation,
-        returnLocation,
-        quantity,
-      })
-      .where(eq(items.id, groupItem.id))
-      .returning();
-
-    const existingImages = await tx.query.itemImages.findMany({
-      where: eq(itemImages.itemId, item.id),
-    });
-
-    const existingImageUrls = existingImages.map((image) => image.imageUrl);
-    const newImageUrls = images.filter(
-      (image) => !existingImageUrls.includes(image),
-    );
-
-    const deletedImageUrls = existingImageUrls.filter(
-      (image) => !images.includes(image),
-    );
-
-    // 삭제된 이미지를 삭제
-    await tx
-      .delete(itemImages)
-      .where(
-        and(
-          eq(itemImages.itemId, item.id),
-          inArray(itemImages.imageUrl, deletedImageUrls),
-        ),
-      );
-
-    // 추가된 이미지를 추가
-    const newItemImages = newImageUrls.map((image) => ({
-      itemId: item.id,
-      imageUrl: image,
-      groupId: id,
-    }));
-    await tx.insert(itemImages).values(newItemImages);
-
-    return item;
-  });
-
-  return c.json({
-    status: "success",
-    code: 200,
-    message: "Group item updated successfully",
-    data: {
-      id: updatedItem.id.toString(),
-      name: updatedItem.name,
-      description: updatedItem.description,
-      caution: updatedItem.caution,
-      pickupLocation: updatedItem.pickupLocation,
-      returnLocation: updatedItem.returnLocation,
-      quantity: updatedItem.quantity,
-      images,
-      createdAt: updatedItem.createdAt.toISOString(),
-      updatedAt: updatedItem.updatedAt.toISOString(),
-      groupId: updatedItem.groupId.toString(),
-      group: {
-        id: groupMember.group.id.toString(),
-        name: groupMember.group.name,
-        description: groupMember.group.description,
-        image: groupMember.group.groupImages[0]?.imageUrl,
-        createdBy: groupMember.userId.toString(),
-        createdAt: groupMember.group.createdAt.toISOString(),
-        updatedAt: groupMember.group.updatedAt.toISOString(),
-      },
-    },
-  });
-});
-
 app.openapi(routes.listItems, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
@@ -858,6 +597,114 @@ app.openapi(routes.listItems, async (c) => {
       },
     })),
   });
+});
+
+app.openapi(routes.listMembers, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 404,
+        message: "Group not found",
+      },
+      404,
+    );
+  }
+
+  const result = await db.query.groupMembers.findMany({
+    with: {
+      user: {
+        columns: {
+          id: true,
+          username: true,
+          profileImage: true,
+        },
+      },
+    },
+    where: eq(groupMembers.groupId, id),
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Group members fetched successfully",
+    data: result.map(({ user, ...groupMember }) => ({
+      id: user.id.toString(),
+      username: user.username,
+      profileImage: user.profileImage,
+      role: groupMember.role,
+      joinedAt: groupMember.createdAt.toISOString(),
+    })),
+  });
+});
+
+app.openapi(routes.deleteMembers, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+  const { ids } = c.req.valid("json");
+  const deleteIds = ids.map((id) => Number(id));
+
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
+  });
+
+  if (!groupMember) {
+    return c.json(
+      {
+        status: "fail",
+        code: 404,
+        message: "Group not found",
+      },
+      404,
+    );
+  }
+
+  const isGroupAdmin = groupMember?.role === GROUP_ROLE.ADMIN;
+  if (!isGroupAdmin) {
+    return c.json(
+      {
+        status: "fail",
+        code: 403,
+        message: "You are not authorized to delete this group",
+      },
+      403,
+    );
+  }
+
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(groupMembers)
+        .where(
+          and(
+            eq(groupMembers.groupId, id),
+            inArray(groupMembers.userId, deleteIds),
+          ),
+        );
+    });
+
+    return c.json({
+      status: "success",
+      code: 200,
+      message: "Group members deleted successfully",
+    });
+  } catch {
+    return c.json(
+      {
+        status: "fail",
+        code: 500,
+        message: "Internal server error",
+      },
+      500,
+    );
+  }
 });
 
 app.openapi(routes.leftGroup, async (c) => {

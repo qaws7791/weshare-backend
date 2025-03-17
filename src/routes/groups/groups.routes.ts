@@ -7,7 +7,6 @@ import {
   GroupInviteSchema,
   GroupItemJsonSchema,
   GroupItemListSchema,
-  GroupItemParamsSchema,
   GroupItemSchema,
   GroupListSchema,
   GroupMemberListSchema,
@@ -332,48 +331,6 @@ export const createItem = createRoute({
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
-      content: errorContent(),
-    },
-  },
-});
-
-export const updateItem = createRoute({
-  summary: "그룹 아이템 수정(관리자만 가능)",
-  method: "patch",
-  path: "/groups/{id}/items/{itemId}",
-  tags: [TAG],
-  middleware: [isAuthenticated] as const,
-  security: [
-    {
-      cookieAuth: [],
-    },
-  ],
-  request: {
-    params: GroupItemParamsSchema,
-    body: {
-      content: {
-        "application/json": {
-          schema: GroupItemJsonSchema,
-        },
-      },
-      description: "Group item to update",
-    },
-  },
-  responses: {
-    [status.OK]: {
-      description: "Update group item",
-      content: resourceContent(GroupItemSchema),
-    },
-    [status.BAD_REQUEST]: {
-      description: "Invalid group item data",
-      content: errorContent(),
-    },
-    [status.FORBIDDEN]: {
-      description: "You are not a member or admin of this group",
-      content: errorContent(),
-    },
-    [status.NOT_FOUND]: {
-      description: "Group or group item not found",
       content: errorContent(),
     },
   },

@@ -1,8 +1,9 @@
 import db from "@/database";
-import { reservations } from "@/database/schema";
+import { groupMembers, items, reservations } from "@/database/schema";
+import { getMaxReserveQuantity } from "@/routes/items/items.service";
 import { RESERVATION_STATUS } from "@/routes/reservations/reservations.constants";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, lte, or } from "drizzle-orm";
 import * as routes from "./reservations.routes";
 const app = new OpenAPIHono();
 
@@ -190,6 +191,112 @@ app.openapi(routes.cancel, async (c) => {
       reservationTime: result.reservationTime.toISOString(),
       startTime: result.startTime.toISOString(),
       endTime: result.endTime.toISOString(),
+    },
+  });
+});
+
+app.openapi(routes.reserveItem, async (c) => {
+  // 물품 예약하기
+  // 1. 사용자가 속한 그룹의 물품인지 확인
+  // 2. 해당 개수, 해당 시간에 예약 가능한지 기존의 예약과 물품 정보들을 통해 확인
+  // 3. 예약하기
+  // 4. 예약 완료 후 예약 정보를 반환
+  const user = c.get("user")!;
+
+  const { startTime, endTime, quantity } = c.req.valid("json");
+  const itemId = parseInt(c.req.valid("json").itemId);
+  const itemData = await db.query.items.findFirst({
+    where: eq(items.id, itemId),
+    with: {
+      group: {
+        with: {
+          groupMembers: {
+            where: eq(groupMembers.userId, user.id),
+          },
+        },
+      },
+    },
+  });
+
+  if (!itemData || itemData.group.groupMembers.length === 0) {
+    return c.json({
+      status: "fail",
+      code: 404,
+      message: "Item not found",
+    });
+  }
+
+  const group = itemData.group;
+
+  const groupId = group.id;
+  const itemQuantity = itemData.quantity;
+  const startDate = new Date(startTime);
+  const endDate = new Date(endTime);
+  if (quantity > itemQuantity) {
+    return c.json({
+      status: "fail",
+      code: 400,
+      message: "Not enough quantity",
+    });
+  }
+
+  if (startDate.getSeconds() !== 0 || endDate.getSeconds() !== 0) {
+    return c.json({
+      status: "fail",
+      code: 400,
+      message: "Invalid time",
+    });
+  }
+  // 시간대별로 예약된 최대 수량을 계산
+
+  const reservationsData = await db.query.reservations.findMany({
+    where: and(
+      eq(reservations.itemId, itemId),
+      or(
+        lte(reservations.startTime, endDate),
+        gte(reservations.endTime, startDate),
+      ),
+    ),
+  });
+
+  const maxReserveQuantity = getMaxReserveQuantity(reservationsData);
+  const availableQuantity = itemQuantity - maxReserveQuantity;
+  if (quantity > availableQuantity) {
+    return c.json({
+      status: "fail",
+      code: 400,
+      message: "Not enough quantity",
+    });
+  }
+
+  const [reservation] = await db
+    .insert(reservations)
+    .values({
+      userId: user.id,
+      itemId: itemId,
+      startTime: startDate,
+      endTime: endDate,
+      quantity: quantity,
+      groupId: groupId,
+    })
+    .returning();
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Item reserved successfully",
+    data: {
+      id: reservation.id.toString(),
+      userId: reservation.userId.toString(),
+      itemId: reservation.itemId.toString(),
+      status: reservation.status,
+      quantity: reservation.quantity,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      reservationTime: reservation.reservationTime,
+      createdAt: reservation.createdAt,
+      updatedAt: reservation.updatedAt,
+      groupId: groupId,
     },
   });
 });

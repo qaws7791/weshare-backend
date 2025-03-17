@@ -1,6 +1,7 @@
 import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
 import {
+  ReservationCreateJsonSchema,
   ReservationListSchema,
   ReservationParamsSchema,
   ReservationSchema,
@@ -81,6 +82,40 @@ export const cancel = createRoute({
     [status.NOT_FOUND]: {
       description: "예약을 찾을 수 없습니다.",
       content: errorContent(),
+    },
+  },
+});
+
+export const reserveItem = createRoute({
+  summary: "물품 예약",
+  method: "post",
+  path: "/reservations",
+  tags: [TAG],
+  middleware: [isAuthenticated] as const,
+  security: [
+    {
+      cookieAuth: [],
+    },
+  ],
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: ReservationCreateJsonSchema,
+        },
+      },
+    },
+  },
+  responses: {
+    [status.OK]: {
+      description: "예약 생성",
+      content: resourceContent(ReservationSchema),
+    },
+    [status.NOT_FOUND]: {
+      description: "물품을 찾을 수 없습니다.",
+    },
+    [status.BAD_REQUEST]: {
+      description: "예약할 수 없는 물품입니다.",
     },
   },
 });

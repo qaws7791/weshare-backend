@@ -1,3 +1,4 @@
+import { validateReservationTime } from "@/routes/items/items.service";
 import { z } from "@hono/zod-openapi";
 
 export const ReservationSchema = z.object({
@@ -31,3 +32,18 @@ export const ReservationListSchema = z.array(ReservationSchema);
 export const ReservationParamsSchema = z.object({
   id: z.string(),
 });
+
+export const ReservationCreateJsonSchema = z
+  .object({
+    itemId: z.string(),
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+    quantity: z.number(),
+  })
+  .refine(
+    (data) =>
+      validateReservationTime(new Date(data.startTime), new Date(data.endTime)),
+    {
+      message: "Invalid reservation time",
+    },
+  );
