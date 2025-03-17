@@ -315,11 +315,11 @@ export const reservations = pgTable("reservations", {
 export const reservationsRelations = relations(
   reservations,
   ({ one, many }) => ({
-    users: one(users, {
+    user: one(users, {
       fields: [reservations.userId],
       references: [users.id],
     }),
-    items: one(items, {
+    item: one(items, {
       fields: [reservations.itemId],
       references: [items.id],
     }),

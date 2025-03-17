@@ -329,7 +329,7 @@ app.openapi(routes.itemReservations, async (c) => {
   const reservationsData = await db.query.reservations.findMany({
     where: eq(reservations.itemId, parseInt(id)),
     with: {
-      users: {
+      user: {
         columns: {
           id: true,
           username: true,
@@ -355,9 +355,9 @@ app.openapi(routes.itemReservations, async (c) => {
       createdAt: reservation.createdAt,
       updatedAt: reservation.updatedAt,
       user: {
-        id: reservation.users.id.toString(),
-        username: reservation.users.username,
-        profileImage: reservation.users.profileImage,
+        id: reservation.user.id.toString(),
+        username: reservation.user.username,
+        profileImage: reservation.user.profileImage,
       },
     })),
   });

@@ -11,7 +11,7 @@ app.openapi(routes.list, async (c) => {
   const result = await db.query.reservations.findMany({
     where: eq(reservations.userId, user.id),
     with: {
-      items: {
+      item: {
         with: {
           itemImages: true,
         },
@@ -31,17 +31,17 @@ app.openapi(routes.list, async (c) => {
       quantity: reservation.quantity,
       itemId: reservation.itemId.toString(),
       item: {
-        id: reservation.items.id.toString(),
-        groupId: reservation.items.groupId,
-        name: reservation.items.name,
-        quantity: reservation.items.quantity,
-        description: reservation.items.description,
-        caution: reservation.items.caution,
-        pickupLocation: reservation.items.pickupLocation,
-        returnLocation: reservation.items.returnLocation,
-        createdAt: reservation.items.createdAt.toISOString(),
-        updatedAt: reservation.items.updatedAt.toISOString(),
-        itemImages: reservation.items.itemImages.map((image) => image.imageUrl),
+        id: reservation.item.id.toString(),
+        groupId: reservation.item.groupId,
+        name: reservation.item.name,
+        quantity: reservation.item.quantity,
+        description: reservation.item.description,
+        caution: reservation.item.caution,
+        pickupLocation: reservation.item.pickupLocation,
+        returnLocation: reservation.item.returnLocation,
+        createdAt: reservation.item.createdAt.toISOString(),
+        updatedAt: reservation.item.updatedAt.toISOString(),
+        itemImages: reservation.item.itemImages.map((image) => image.imageUrl),
       },
       status: reservation.status,
       reservationTime: reservation.reservationTime.toISOString(),
@@ -60,7 +60,7 @@ app.openapi(routes.detail, async (c) => {
       eq(reservations.id, parseInt(id)),
     ),
     with: {
-      items: {
+      item: {
         with: {
           itemImages: true,
         },
@@ -91,17 +91,17 @@ app.openapi(routes.detail, async (c) => {
       quantity: result.quantity,
       itemId: result.itemId.toString(),
       item: {
-        id: result.items.id.toString(),
-        groupId: result.items.groupId,
-        name: result.items.name,
-        quantity: result.items.quantity,
-        description: result.items.description,
-        caution: result.items.caution,
-        pickupLocation: result.items.pickupLocation,
-        returnLocation: result.items.returnLocation,
-        createdAt: result.items.createdAt.toISOString(),
-        updatedAt: result.items.updatedAt.toISOString(),
-        itemImages: result.items.itemImages.map((image) => image.imageUrl),
+        id: result.item.id.toString(),
+        groupId: result.item.groupId,
+        name: result.item.name,
+        quantity: result.item.quantity,
+        description: result.item.description,
+        caution: result.item.caution,
+        pickupLocation: result.item.pickupLocation,
+        returnLocation: result.item.returnLocation,
+        createdAt: result.item.createdAt.toISOString(),
+        updatedAt: result.item.updatedAt.toISOString(),
+        itemImages: result.item.itemImages.map((image) => image.imageUrl),
       },
       status: result.status,
       reservationTime: result.reservationTime.toISOString(),
@@ -121,7 +121,7 @@ app.openapi(routes.cancel, async (c) => {
       eq(reservations.id, parseInt(id)),
     ),
     with: {
-      items: {
+      item: {
         with: {
           itemImages: true,
         },
@@ -174,17 +174,17 @@ app.openapi(routes.cancel, async (c) => {
       quantity: result.quantity,
       itemId: result.itemId.toString(),
       item: {
-        id: result.items.id.toString(),
-        groupId: result.items.groupId,
-        name: result.items.name,
-        quantity: result.items.quantity,
-        description: result.items.description,
-        caution: result.items.caution,
-        pickupLocation: result.items.pickupLocation,
-        returnLocation: result.items.returnLocation,
-        createdAt: result.items.createdAt.toISOString(),
-        updatedAt: result.items.updatedAt.toISOString(),
-        itemImages: result.items.itemImages.map((image) => image.imageUrl),
+        id: result.item.id.toString(),
+        groupId: result.item.groupId,
+        name: result.item.name,
+        quantity: result.item.quantity,
+        description: result.item.description,
+        caution: result.item.caution,
+        pickupLocation: result.item.pickupLocation,
+        returnLocation: result.item.returnLocation,
+        createdAt: result.item.createdAt.toISOString(),
+        updatedAt: result.item.updatedAt.toISOString(),
+        itemImages: result.item.itemImages.map((image) => image.imageUrl),
       },
       status: result.status,
       reservationTime: result.reservationTime.toISOString(),
