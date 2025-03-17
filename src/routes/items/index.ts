@@ -301,4 +301,66 @@ app.openapi(routes.availableTimes, async (c) => {
   });
 });
 
+app.openapi(routes.itemReservations, async (c) => {
+  const user = c.get("user")!;
+  const { id } = c.req.valid("param");
+
+  const itemData = await db.query.items.findFirst({
+    where: eq(items.id, parseInt(id)),
+    with: {
+      group: {
+        with: {
+          groupMembers: {
+            where: eq(groupMembers.userId, user.id),
+          },
+        },
+      },
+    },
+  });
+
+  if (!itemData || itemData.group.groupMembers.length === 0) {
+    return c.json({
+      status: "fail",
+      code: 404,
+      message: "Item not found",
+    });
+  }
+
+  const reservationsData = await db.query.reservations.findMany({
+    where: eq(reservations.itemId, parseInt(id)),
+    with: {
+      users: {
+        columns: {
+          id: true,
+          username: true,
+          profileImage: true,
+        },
+      },
+    },
+  });
+
+  return c.json({
+    status: "success",
+    code: 200,
+    message: "Reservations fetched successfully",
+    data: reservationsData.map((reservation) => ({
+      id: reservation.id.toString(),
+      userId: reservation.userId.toString(),
+      itemId: reservation.itemId.toString(),
+      status: reservation.status,
+      quantity: reservation.quantity,
+      startTime: reservation.startTime,
+      endTime: reservation.endTime,
+      reservationTime: reservation.reservationTime,
+      createdAt: reservation.createdAt,
+      updatedAt: reservation.updatedAt,
+      user: {
+        id: reservation.users.id.toString(),
+        username: reservation.users.username,
+        profileImage: reservation.users.profileImage,
+      },
+    })),
+  });
+});
+
 export default app;

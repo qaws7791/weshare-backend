@@ -70,3 +70,23 @@ export const availableTimeSlotSchema = z.array(
     slotAvailableCount: z.number(),
   }),
 );
+
+export const ReservationsWithUserSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  user: z.object({
+    id: z.string(),
+    username: z.string(),
+    profileImage: z.string(),
+  }),
+  itemId: z.string(),
+  status: z.string(),
+  quantity: z.number(),
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  reservationTime: z.string().datetime(),
+  pickupTime: z.string().datetime(),
+  returnTime: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
