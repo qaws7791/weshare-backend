@@ -1,9 +1,6 @@
 import { errorContent, resourceContent } from "@/lib/create-schema";
 import { isAuthenticated } from "@/middlewares/auth.middleware";
-import {
-  UploadImageBodySchema,
-  UploadImageSchema,
-} from "@/routes/images/images.schema";
+import { UploadImageSchema } from "@/routes/images/images.schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
@@ -24,7 +21,15 @@ export const uploadOne = createRoute({
     body: {
       content: {
         "multipart/form-data": {
-          schema: UploadImageBodySchema,
+          schema: {
+            type: "object",
+            properties: {
+              file: {
+                type: "string",
+                format: "binary",
+              },
+            },
+          },
         },
       },
       description: "Image to upload",

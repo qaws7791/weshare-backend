@@ -17,6 +17,17 @@ app.openapi(routes.uploadOne, async (c) => {
       400,
     );
   }
+
+  if (image.size > 5 * 1024 * 1024) {
+    return c.json(
+      {
+        status: "error",
+        code: 400,
+        message: "File size exceeds 5MB",
+      },
+      400,
+    );
+  }
   try {
     const byteArrayBuffer = await image.arrayBuffer();
     const base64 = encodeBase64(byteArrayBuffer);
