@@ -3,9 +3,9 @@ import z from "zod";
 export const UserSchema = z.object({
   id: z.string(),
   username: z.string(),
-  provider: z.string(),
+  provider: z.string().nullable(),
   email: z.string().nullable(),
-  providerId: z.string(),
+  providerId: z.string().nullable(),
   profileImage: z.string(),
 });
 
