@@ -2,7 +2,7 @@ import { GROUP_ROLE } from "@/lib/group-role";
 import { slugId } from "@/lib/nanoid";
 import { RESERVATION_STATUS } from "@/routes/reservations/reservations.constants";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, count, desc, eq, inArray } from "drizzle-orm";
 import db from "../../database";
 import {
   groupImages,
@@ -17,40 +17,32 @@ const app = new OpenAPIHono();
 
 app.openapi(routes.list, async (c) => {
   const user = c.get("user")!;
-  const result = await db.query.groupMembers.findMany({
-    with: {
-      group: {
-        columns: {
-          id: true,
-          name: true,
-          description: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        with: {
-          groupImages: {
-            columns: {
-              imageUrl: true,
-            },
-          },
-        },
-      },
-    },
-    where: eq(groupMembers.userId, user.id),
-  });
+  const result = await db
+    .select({
+      group: groups,
+      groupImages: groupImages,
+      memberCount: count(groupMembers.userId),
+    })
+    .from(groupMembers)
+    .innerJoin(groupImages, eq(groupMembers.groupId, groupImages.groupId))
+    .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+    .where(eq(groupMembers.userId, user.id))
+    .groupBy(groups.id)
+    .orderBy(desc(groups.createdAt));
 
   return c.json({
     status: "success",
     code: 200,
     message: "Groups fetched successfully",
-    data: result.map(({ group, ...groupMember }) => ({
+    data: result.map(({ group, groupImages, memberCount }) => ({
       id: group.id,
       name: group.name,
       description: group.description,
-      image: group.groupImages[0]?.imageUrl,
-      createdBy: groupMember.userId.toString(),
+      image: groupImages.imageUrl,
+      createdBy: group.createdBy.toString(),
       createdAt: group.createdAt.toISOString(),
       updatedAt: group.updatedAt.toISOString(),
+      memberCount: memberCount,
     })),
   });
 });
@@ -61,8 +53,8 @@ app.openapi(routes.create, async (c) => {
 
   const { name, description, image } = json;
 
-  const groupData = await db.transaction(async (tx) => {
-    const [group] = await tx
+  const result = await db.transaction(async (tx) => {
+    const [newGroup] = await tx
       .insert(groups)
       .values({
         name,
@@ -72,36 +64,34 @@ app.openapi(routes.create, async (c) => {
       .returning();
 
     await tx.insert(groupMembers).values({
-      groupId: group.id,
+      groupId: newGroup.id,
       userId: user.id,
       role: GROUP_ROLE.ADMIN,
     });
 
-    const [groupImage] = await tx
-      .insert(groupImages)
-      .values({
-        groupId: group.id,
-        imageUrl: image,
-      })
-      .returning();
+    await tx.insert(groupImages).values({
+      groupId: newGroup.id,
+      imageUrl: image,
+    });
 
-    return { ...group, groupImage };
+    return {
+      group: newGroup,
+      groupImages: { imageUrl: image },
+    };
   });
-
-  const groupImage = groupData.groupImage;
 
   return c.json({
     status: "success",
     code: 201,
     message: "Group created successfully",
     data: {
-      id: groupData.id,
-      name: groupData.name,
-      description: groupData.description,
-      createdBy: groupData.createdBy.toString(),
-      createdAt: groupData.createdAt.toISOString(),
-      updatedAt: groupData.updatedAt.toISOString(),
-      image: groupImage.imageUrl,
+      id: result.group.id.toString(),
+      name: result.group.name,
+      description: result.group.description,
+      createdBy: result.group.createdBy.toString(),
+      createdAt: result.group.createdAt.toISOString(),
+      updatedAt: result.group.updatedAt.toISOString(),
+      image: result.groupImages.imageUrl,
     },
   });
 });
@@ -110,21 +100,11 @@ app.openapi(routes.detail, async (c) => {
   const user = c.get("user")!;
   const { id } = c.req.valid("param");
 
-  const result = await db.query.groups.findFirst({
-    where: eq(groups.id, id),
-    with: {
-      groupImages: {
-        columns: {
-          imageUrl: true,
-        },
-      },
-      groupMembers: {
-        where: eq(groupMembers.userId, user.id),
-      },
-    },
+  const groupMember = await db.query.groupMembers.findFirst({
+    where: and(eq(groupMembers.userId, user.id), eq(groupMembers.groupId, id)),
   });
 
-  if (!result || result.groupMembers.length === 0) {
+  if (!groupMember) {
     return c.json(
       {
         status: "fail",
@@ -135,18 +115,33 @@ app.openapi(routes.detail, async (c) => {
     );
   }
 
+  const [result] = await db
+    .select({
+      group: groups,
+      groupImages: groupImages,
+      memberCount: count(groupMembers.userId),
+    })
+    .from(groupMembers)
+    .innerJoin(groupImages, eq(groupMembers.groupId, groupImages.groupId))
+    .innerJoin(groups, eq(groupMembers.groupId, groups.id))
+    .where(eq(groupMembers.groupId, id))
+    .groupBy(groups.id)
+    .orderBy(desc(groups.createdAt))
+    .limit(1);
+
   return c.json({
     status: "success",
     code: 200,
     message: "Group fetched successfully",
     data: {
-      id: result.id,
-      name: result.name,
-      description: result.description,
-      image: result.groupImages[0]?.imageUrl,
-      createdBy: result.createdBy.toString(),
-      createdAt: result.createdAt.toISOString(),
-      updatedAt: result.updatedAt.toISOString(),
+      id: result.group.id.toString(),
+      name: result.group.name,
+      description: result.group.description,
+      image: result.groupImages.imageUrl,
+      createdBy: result.group.createdBy.toString(),
+      createdAt: result.group.createdAt.toISOString(),
+      updatedAt: result.group.updatedAt.toISOString(),
+      memberCount: result.memberCount,
     },
   });
 });
@@ -186,35 +181,26 @@ app.openapi(routes.update, async (c) => {
     );
   }
 
-  const [groupData] = await db
-    .update(groups)
-    .set({
-      name,
-      description,
-    })
-    .where(eq(groups.id, id))
-    .returning();
-
-  await db
-    .update(groupImages)
-    .set({
-      imageUrl: image,
-    })
-    .where(eq(groupImages.groupId, groupData.id))
-    .returning();
+  await db.transaction(async (tx) => {
+    await tx.update(groups).set({ name, description }).where(eq(groups.id, id));
+    await tx
+      .update(groupImages)
+      .set({ imageUrl: image })
+      .where(eq(groupImages.groupId, id));
+  });
 
   return c.json({
     status: "success",
     code: 200,
     message: "Group updated successfully",
     data: {
-      id: groupData.id,
-      name: groupData.name,
-      description: groupData.description,
-      createdBy: groupData.createdBy.toString(),
-      createdAt: groupData.createdAt.toISOString(),
-      updatedAt: groupData.updatedAt.toISOString(),
+      id: id.toString(),
+      name,
+      description,
       image,
+      createdBy: user.id.toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     },
   });
 });

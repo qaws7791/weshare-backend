@@ -12,7 +12,24 @@ export const GroupSchema = z
   })
   .openapi("GroupSchema");
 
+export const GroupWithMemberCountSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
+    image: z.string(),
+    createdBy: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    memberCount: z.number(),
+  })
+  .openapi("GroupWithMemberCountSchema");
+
 export const GroupListSchema = z.array(GroupSchema);
+
+export const GroupWithMemberCountListSchema = z.array(
+  GroupWithMemberCountSchema,
+);
 
 export const GroupCreateJsonSchema = z
   .object({
@@ -97,7 +114,15 @@ export const GroupItemSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   groupId: z.string(),
-  group: GroupSchema,
+  group: z.object({
+    id: z.string(),
+    name: z.string(),
+    description: z.string(),
+    image: z.string(),
+    createdBy: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  }),
 });
 export const GroupItemListSchema = z.array(GroupItemSchema);
 

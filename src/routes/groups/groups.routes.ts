@@ -5,10 +5,11 @@ import {
   GroupItemCreateJsonSchema,
   GroupItemListSchema,
   GroupItemSchema,
-  GroupListSchema,
   GroupMembersDeleteJsonSchema,
   GroupParamsSchema,
   GroupSchema,
+  GroupWithMemberCountListSchema,
+  GroupWithMemberCountSchema,
   InviteListSchema,
   InviteSchema,
   MemberListSchema,
@@ -61,7 +62,7 @@ export const list = createRoute({
   responses: {
     [status.OK]: {
       description: "List groups",
-      content: resourceContent(GroupListSchema),
+      content: resourceContent(GroupWithMemberCountListSchema),
     },
   },
 });
@@ -121,7 +122,7 @@ export const detail = createRoute({
   responses: {
     [status.OK]: {
       description: "Group detail",
-      content: resourceContent(GroupSchema),
+      content: resourceContent(GroupWithMemberCountSchema),
     },
     [status.NOT_FOUND]: {
       description: "Group not found",
