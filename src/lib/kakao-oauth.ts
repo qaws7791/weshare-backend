@@ -9,7 +9,10 @@ export class KakaoOAuth {
     return `${url}?${params.toString()}`;
   }
 
-  static async fetchAccessToken(code: string): Promise<{
+  static async fetchAccessToken(
+    code: string,
+    redirect_uri?: string,
+  ): Promise<{
     access_token: string;
     access_token_expires_in: number;
     refresh_token: string;
@@ -19,7 +22,7 @@ export class KakaoOAuth {
     const params = new URLSearchParams({
       grant_type: "authorization_code",
       client_id: process.env.KAKAO_REST_API_KEY!,
-      redirect_uri: process.env.KAKAO_REDIRECT_URI!,
+      redirect_uri: redirect_uri || process.env.KAKAO_REDIRECT_URI!,
       client_secret: process.env.KAKAO_CLIENT_SECRET!,
       code,
     });
