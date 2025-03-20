@@ -8,3 +8,10 @@ export const ErrorResponseSchema = z
     errors: z.array(z.string()).optional(),
   })
   .openapi("ErrorResponseSchema");
+
+export const PaginationSchema = z
+  .object({
+    cursor: z.string().optional(),
+    limit: z.coerce.number().min(1).max(100).optional(),
+  })
+  .openapi("PaginationSchema");

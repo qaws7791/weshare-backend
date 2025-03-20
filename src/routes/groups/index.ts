@@ -2,7 +2,7 @@ import { GROUP_ROLE } from "@/lib/group-role";
 import { slugId } from "@/lib/nanoid";
 import { RESERVATION_STATUS } from "@/routes/reservations/reservations.constants";
 import { OpenAPIHono } from "@hono/zod-openapi";
-import { and, count, desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray, lt } from "drizzle-orm";
 import db from "../../database";
 import {
   groupImages,
@@ -17,32 +17,40 @@ const app = new OpenAPIHono();
 
 app.openapi(routes.list, async (c) => {
   const user = c.get("user")!;
+  const query = c.req.valid("query");
+  const cursor = query.cursor ? new Date(query.cursor) : undefined;
+  const limit = query.limit || 100;
   const result = await db
     .select({
       group: groups,
       groupImages: groupImages,
-      memberCount: count(groupMembers.userId),
+      memberCount: db.$count(groupMembers, eq(groupMembers.groupId, groups.id)),
     })
     .from(groupMembers)
-    .innerJoin(groupImages, eq(groupMembers.groupId, groupImages.groupId))
     .innerJoin(groups, eq(groupMembers.groupId, groups.id))
-    .where(eq(groupMembers.userId, user.id))
-    .groupBy(groups.id)
+    .innerJoin(groupImages, eq(groups.id, groupImages.groupId))
+    .where(
+      and(
+        eq(groupMembers.userId, user.id),
+        cursor ? lt(groups.createdAt, cursor) : undefined,
+      ),
+    )
+    .limit(limit)
     .orderBy(desc(groups.createdAt));
 
   return c.json({
     status: "success",
     code: 200,
     message: "Groups fetched successfully",
-    data: result.map(({ group, groupImages, memberCount }) => ({
-      id: group.id,
-      name: group.name,
-      description: group.description,
-      image: groupImages.imageUrl,
-      createdBy: group.createdBy.toString(),
-      createdAt: group.createdAt.toISOString(),
-      updatedAt: group.updatedAt.toISOString(),
-      memberCount: memberCount,
+    data: result.map((group) => ({
+      id: group.group.id.toString(),
+      name: group.group.name,
+      description: group.group.description,
+      image: group.groupImages.imageUrl,
+      createdBy: group.group.createdBy.toString(),
+      createdAt: group.group.createdAt.toISOString(),
+      updatedAt: group.group.updatedAt.toISOString(),
+      memberCount: group.memberCount,
     })),
   });
 });
@@ -119,14 +127,12 @@ app.openapi(routes.detail, async (c) => {
     .select({
       group: groups,
       groupImages: groupImages,
-      memberCount: count(groupMembers.userId),
+      memberCount: db.$count(groupMembers, eq(groupMembers.groupId, groups.id)),
     })
     .from(groupMembers)
     .innerJoin(groupImages, eq(groupMembers.groupId, groupImages.groupId))
     .innerJoin(groups, eq(groupMembers.groupId, groups.id))
     .where(eq(groupMembers.groupId, id))
-    .groupBy(groups.id)
-    .orderBy(desc(groups.createdAt))
     .limit(1);
 
   return c.json({

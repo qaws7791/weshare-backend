@@ -14,6 +14,7 @@ import {
   InviteSchema,
   MemberListSchema,
 } from "@/routes/groups/groups.schema";
+import { PaginationSchema } from "@/shared/schema";
 import { createRoute } from "@hono/zod-openapi";
 import status from "http-status";
 
@@ -59,6 +60,9 @@ export const list = createRoute({
       cookieAuth: [],
     },
   ],
+  request: {
+    query: PaginationSchema,
+  },
   responses: {
     [status.OK]: {
       description: "List groups",
