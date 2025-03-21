@@ -24,9 +24,12 @@ export const uploadOne = createRoute({
           schema: {
             type: "object",
             properties: {
-              file: {
-                type: "string",
-                format: "binary",
+              files: {
+                type: "array",
+                items: {
+                  type: "string",
+                  format: "binary",
+                },
               },
             },
           },

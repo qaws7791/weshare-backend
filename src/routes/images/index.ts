@@ -5,9 +5,10 @@ import * as routes from "./images.routes";
 const app = new OpenAPIHono();
 
 app.openapi(routes.uploadOne, async (c) => {
-  const body = await c.req.parseBody();
-  const image = body.file;
-  if (typeof image === "string") {
+  const body = await c.req.parseBody({ all: true });
+  const files = body.files;
+  // file이 file[]이 아닌 경우
+  if (!Array.isArray(files)) {
     return c.json(
       {
         status: "error",
@@ -18,18 +19,34 @@ app.openapi(routes.uploadOne, async (c) => {
     );
   }
 
-  if (image.size > 5 * 1024 * 1024) {
-    return c.json(
-      {
-        status: "error",
-        code: 400,
-        message: "File size exceeds 5MB",
-      },
-      400,
-    );
+  for (const file of files) {
+    // file이 File이 아닌 경우
+    if (!(file instanceof File)) {
+      return c.json(
+        {
+          status: "error",
+          code: 400,
+          message: "Invalid file type",
+        },
+        400,
+      );
+    }
+    // file 사이즈가 5MB 초과인 경우
+    if (file.size > 5 * 1024 * 1024) {
+      return c.json(
+        {
+          status: "error",
+          code: 400,
+          message: "File size exceeds 5MB",
+        },
+        400,
+      );
+    }
   }
-  try {
-    const byteArrayBuffer = await image.arrayBuffer();
+
+  const imagesToUpload = files.map(async (_file) => {
+    const file = _file as File;
+    const byteArrayBuffer = await file.arrayBuffer();
     const base64 = encodeBase64(byteArrayBuffer);
     const results = await cloudinary.uploader.upload(
       `data:image/png;base64,${base64}`,
@@ -37,14 +54,19 @@ app.openapi(routes.uploadOne, async (c) => {
         asset_folder: "uploads",
       },
     );
+    return {
+      url: results.secure_url,
+    };
+  });
+
+  try {
+    const results = await Promise.all(imagesToUpload);
 
     return c.json({
       status: "success",
       code: 200,
       message: "File uploaded successfully",
-      data: {
-        url: results.secure_url,
-      },
+      data: results,
     });
   } catch {
     return c.json(
