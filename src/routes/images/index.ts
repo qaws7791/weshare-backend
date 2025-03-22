@@ -7,8 +7,12 @@ const app = new OpenAPIHono();
 app.openapi(routes.uploadOne, async (c) => {
   const body = await c.req.parseBody({ all: true });
   const files = body.files;
-  // file이 file[]이 아닌 경우
-  if (!Array.isArray(files)) {
+  // File 또는 File[]가 아닌 경우
+  if (
+    !files ||
+    (Array.isArray(files) && files.length === 0) ||
+    (files instanceof File && files.size === 0)
+  ) {
     return c.json(
       {
         status: "error",
@@ -19,7 +23,9 @@ app.openapi(routes.uploadOne, async (c) => {
     );
   }
 
-  for (const file of files) {
+  const images = (Array.isArray(files) ? files : [files]) as File[];
+
+  for (const file of images) {
     // file이 File이 아닌 경우
     if (!(file instanceof File)) {
       return c.json(
@@ -44,7 +50,7 @@ app.openapi(routes.uploadOne, async (c) => {
     }
   }
 
-  const imagesToUpload = files.map(async (_file) => {
+  const imagesToUpload = images.map(async (_file) => {
     const file = _file as File;
     const byteArrayBuffer = await file.arrayBuffer();
     const base64 = encodeBase64(byteArrayBuffer);
